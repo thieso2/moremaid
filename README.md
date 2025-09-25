@@ -6,7 +6,8 @@ A powerful Markdown viewer with full Mermaid diagram support. View your markdown
 
 - 🎨 **Mermaid Diagram Rendering** - Full support for flowcharts, sequence diagrams, Gantt charts, and more
 - 🖥️ **Syntax Highlighting** - Code blocks with syntax highlighting for 20+ languages via Prism.js
-- 🔍 **Two Usage Modes** - Choose between CLI tool or web server
+- 📁 **Folder Mode** - Browse entire directories of markdown files with built-in HTTP server
+- 🔍 **Smart Port Selection** - Automatically finds available port when default is busy
 - 📱 **Responsive Design** - Clean, readable layout that works on any screen size
 - 🔗 **Bookmarkable URLs** - Direct links to specific files (server mode)
 - 🖼️ **Fullscreen Diagrams** - Click to open Mermaid diagrams in a new window
@@ -47,7 +48,7 @@ python server.py
 
 ## Usage
 
-### Command-Line Tool
+### Command-Line Tool (Single File)
 
 Convert any markdown file to HTML and open it in your browser:
 
@@ -62,7 +63,26 @@ The tool:
 - Opens it in your default browser automatically
 - Cleans up the temporary file after viewing
 
-### Web Server
+### Folder Mode (Directory Browser)
+
+Browse all markdown files in a directory with a built-in server:
+
+```bash
+mm .                    # Current directory
+mm docs                 # Specific folder
+mm ~/projects/docs      # Any folder path
+PORT=3000 mm samples    # Custom port
+```
+
+Folder mode features:
+- Starts local HTTP server (automatically finds free port)
+- Recursively finds all markdown files
+- Interactive index page with file navigation
+- Click files to view them with full rendering
+- Back navigation on file pages
+- Graceful shutdown with Ctrl+C
+
+### Python Web Server
 
 Start the server to browse all markdown files in a directory:
 
@@ -166,7 +186,7 @@ moremaid/
 
 ## How It Works
 
-### CLI Tool
+### CLI Tool (Single File)
 1. Reads the markdown file
 2. Converts to HTML using `marked` library
 3. Processes Mermaid code blocks
@@ -175,7 +195,15 @@ moremaid/
 6. Opens it in your default browser
 7. Cleans up after 5 seconds
 
-### Web Server
+### CLI Tool (Folder Mode)
+1. Scans directory recursively for markdown files
+2. Starts HTTP server on available port
+3. Generates index page with file listing
+4. Serves markdown files on demand
+5. Renders with same quality as single-file mode
+6. Handles navigation between files
+
+### Python Web Server
 1. Scans directory for markdown files
 2. Provides REST API endpoints
 3. Serves single-page application
