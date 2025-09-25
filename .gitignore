@@ -1,27 +1,5 @@
-# Samples folder
-samples/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv
-
-# OS files
+node_modules/
 .DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-
-# IDE
-.vscode/
-.idea/
-*.iml
-
-# Logs
 *.log
+tmp/
+temp/

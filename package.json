@@ -1,0 +1,28 @@
+{
+  "name": "moremaid",
+  "version": "1.0.0",
+  "description": "A command-line tool to view Markdown files with Mermaid diagram support",
+  "main": "mm.js",
+  "bin": {
+    "mm": "./mm.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "markdown",
+    "mermaid",
+    "viewer",
+    "cli",
+    "html",
+    "converter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "marked": "^12.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
