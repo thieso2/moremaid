@@ -1,0 +1,18 @@
+# Development files
+.git
+.gitignore
+*.log
+.DS_Store
+
+# Python server (not needed for npm package)
+python/
+
+# Sample files (not needed for npm package)
+samples/
+test.md
+
+# Development documentation
+CLAUDE.md
+
+# Node modules (npm will handle dependencies)
+node_modules/

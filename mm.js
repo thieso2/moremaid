@@ -4,14 +4,54 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { marked } = require('marked');
+const packageJson = require('./package.json');
 
-// Check if file argument is provided
-if (process.argv.length < 3) {
-    console.error('Usage: mm <markdown-file>');
-    process.exit(1);
+// Parse command line arguments
+const args = process.argv.slice(2);
+
+// Handle --version flag
+if (args.includes('--version') || args.includes('-v')) {
+    console.log(packageJson.version);
+    process.exit(0);
 }
 
-const inputFile = process.argv[2];
+// Handle --help flag
+if (args.includes('--help') || args.includes('-h') || args.length === 0) {
+    console.log(`
+moremaid v${packageJson.version}
+A command-line tool to view Markdown files with Mermaid diagram support
+
+Usage: mm [options] <markdown-file>
+
+Options:
+  -h, --help     Show this help message
+  -v, --version  Show version number
+
+Examples:
+  mm README.md              View a markdown file
+  mm docs/guide.md          View a file in a subdirectory
+  mm ~/notes/meeting.md     View a file with absolute path
+
+Features:
+  • Renders Mermaid diagrams (flowcharts, sequence diagrams, etc.)
+  • Syntax highlighting for code blocks
+  • Opens in your default browser
+  • No server required - generates standalone HTML
+
+For more information, visit: https://github.com/thieso2/moremaid
+`);
+    process.exit(0);
+}
+
+// Get the input file (first non-flag argument)
+const inputFile = args.find(arg => !arg.startsWith('-'));
+
+if (!inputFile) {
+    console.error('Error: No markdown file specified');
+    console.error('Usage: mm <markdown-file>');
+    console.error('Try "mm --help" for more information');
+    process.exit(1);
+}
 
 // Check if file exists
 if (!fs.existsSync(inputFile)) {
@@ -425,8 +465,6 @@ exec(`${openCommand} "${tempFile}"`, (error) => {
         console.log(`HTML file saved to: ${tempFile}`);
         process.exit(1);
     }
-
-    console.log(`✨ Opened ${path.basename(inputFile)} in browser`);
 
     // Clean up temp file after a delay (give browser time to load)
     setTimeout(() => {
