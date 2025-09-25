@@ -1,11 +1,13 @@
 # Moremaid
 
-A powerful Markdown viewer with full Mermaid diagram support. View your markdown files with beautifully rendered diagrams, syntax-highlighted code blocks, and a clean reading experience - either via command-line or web interface.
+A powerful Markdown viewer with full Mermaid diagram support. View your markdown files with beautifully rendered diagrams, syntax-highlighted code blocks, and a clean reading experience.
 
 ## Features
 
 - 🎨 **Mermaid Diagram Rendering** - Full support for flowcharts, sequence diagrams, Gantt charts, and more
 - 🖥️ **Syntax Highlighting** - Code blocks with syntax highlighting for 20+ languages via Prism.js
+- 🎭 **10 Color Themes** - Choose from Light, Dark, GitHub, Dracula, Nord, Solarized, Monokai, and more
+- 🌙 **Smart Theme UI** - Theme selector appears on hover in top-right corner
 - 📁 **Folder Mode** - Browse entire directories of markdown files with built-in HTTP server
 - 🔍 **Smart Port Selection** - Automatically finds available port when default is busy
 - 📱 **Responsive Design** - Clean, readable layout that works on any screen size
@@ -36,16 +38,6 @@ npm install
 npx moremaid your-file.md
 ```
 
-### Python Server
-
-No installation needed - uses Python standard library only:
-
-```bash
-git clone https://github.com/yourusername/moremaid.git
-cd moremaid/python
-python server.py
-```
-
 ## Usage
 
 ### Command-Line Tool (Single File)
@@ -56,12 +48,32 @@ Convert any markdown file to HTML and open it in your browser:
 mm README.md
 mm docs/api-documentation.md
 mm ~/notes/meeting-notes.md
+
+# With theme selection
+mm README.md --theme github
+mm file.md -t dracula
+mm file.md --dark              # Shortcut for --theme dark
+```
+
+Available command-line options:
+```bash
+mm [options] <markdown-file-or-folder>
+
+Options:
+  -h, --help          Show help message
+  -v, --version       Show version number
+  -d, --dark          Start in dark mode (shortcut for --theme dark)
+  -t, --theme <name>  Select color theme:
+                      light, dark, github, github-dark, dracula,
+                      nord, solarized-light, solarized-dark,
+                      monokai, one-dark
 ```
 
 The tool:
 - Generates a standalone HTML file with all assets embedded
 - Opens it in your default browser automatically
 - Cleans up the temporary file after viewing
+- Supports theme selection via command-line flags
 
 ### Folder Mode (Directory Browser)
 
@@ -82,22 +94,25 @@ Folder mode features:
 - Back navigation on file pages
 - Graceful shutdown with Ctrl+C
 
-### Python Web Server
+## Color Themes
 
-Start the server to browse all markdown files in a directory:
+Moremaid includes 10 beautiful color themes:
 
-```bash
-cd your-markdown-directory
-python path/to/moremaid/python/server.py
-```
+- **Light** - Clean, bright theme for daytime reading
+- **Dark** - Easy on the eyes for night-time viewing
+- **GitHub** - Familiar GitHub markdown styling
+- **GitHub Dark** - GitHub's dark mode theme
+- **Dracula** - Popular dark theme with vibrant colors
+- **Nord** - Arctic, north-bluish color palette
+- **Solarized Light/Dark** - Precision colors for machines and people
+- **Monokai** - Classic developer theme
+- **One Dark** - Atom's iconic dark theme
 
-Then open http://localhost:8000 in your browser.
-
-Features:
-- File tree navigation in sidebar
-- Click any `.md` file to view it
-- Bookmark specific files with URLs like `http://localhost:8000#docs/guide.md`
-- Navigate through your entire markdown documentation
+Themes can be:
+- Selected via command-line: `mm file.md --theme dracula`
+- Changed interactively by hovering over the top-right corner
+- Persisted in browser's localStorage
+- System preference aware (uses dark mode if system prefers it)
 
 ## Mermaid Diagram Support
 
@@ -136,6 +151,8 @@ gantt
 
 Click the ⛶ button on any diagram to open it fullscreen in a new window.
 
+All diagrams automatically adapt to your selected color theme for consistent styling.
+
 ## Syntax Highlighting
 
 Code blocks are automatically highlighted with support for:
@@ -162,10 +179,6 @@ def hello_world():
 moremaid/
 ├── mm.js              # CLI tool entry point
 ├── package.json       # NPM package configuration
-├── python/
-│   ├── server.py      # Python HTTP server
-│   ├── index.html     # Web interface
-│   └── README.md      # Server documentation
 ├── samples/           # Example markdown files
 └── README.md          # This file
 ```
@@ -175,10 +188,6 @@ moremaid/
 ### CLI Tool
 - Node.js 14.0.0 or higher
 - NPM (comes with Node.js)
-
-### Python Server
-- Python 3.x
-- No additional packages required
 
 ### Browser Support
 - Any modern browser (Chrome, Firefox, Safari, Edge)
@@ -202,13 +211,6 @@ moremaid/
 4. Serves markdown files on demand
 5. Renders with same quality as single-file mode
 6. Handles navigation between files
-
-### Python Web Server
-1. Scans directory for markdown files
-2. Provides REST API endpoints
-3. Serves single-page application
-4. Renders markdown on-demand
-5. Maintains navigation state via URL hash
 
 ## Development
 
@@ -248,15 +250,15 @@ MIT License - see LICENSE file for details
 | Feature | Moremaid | GitHub | VSCode | Typora |
 |---------|----------|---------|---------|---------|
 | Mermaid Support | ✅ Full | ✅ Full | ⚠️ Extension | ✅ Full |
+| Color Themes | ✅ 10+ | ✅ 2 | ✅ Many | ✅ Several |
 | Offline Usage | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes |
 | CLI Tool | ✅ Yes | ❌ No | ❌ No | ❌ No |
 | Web Server | ✅ Yes | ❌ N/A | ⚠️ Extension | ❌ No |
 | Free | ✅ Yes | ✅ Yes | ✅ Yes | ❌ Paid |
 | Bookmarkable | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
-| No Installation* | ✅ Yes** | ✅ Yes | ❌ No | ❌ No |
+| No Installation* | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
 
-\* For viewing markdown files
-\** Python server requires no installation beyond Python itself
+\* For viewing markdown files using npx
 
 ## Troubleshooting
 
@@ -274,13 +276,9 @@ MIT License - see LICENSE file for details
 
 ### Server Issues
 
-**Port 8000 already in use**
-- Another service is using port 8000
-- Stop the other service or modify `server.py` to use a different port
-
-**No files showing in sidebar**
-- Make sure you're running the server from a directory containing `.md` files
-- Check that Python has read permissions for the directory
+**Port already in use**
+- The folder mode automatically finds an available port
+- Use `PORT=3000 mm .` to specify a custom port
 
 ### Rendering Issues
 

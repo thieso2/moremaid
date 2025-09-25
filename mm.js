@@ -11,6 +11,20 @@ const packageJson = require('./package.json');
 // Parse command line arguments
 const args = process.argv.slice(2);
 
+// Check for dark mode flag (legacy support)
+const darkMode = args.includes('--dark') || args.includes('-d');
+
+// Check for theme flag
+let selectedTheme = null;
+const themeIndex = args.findIndex(arg => arg === '--theme' || arg === '-t');
+if (themeIndex !== -1 && args[themeIndex + 1]) {
+    selectedTheme = args[themeIndex + 1];
+}
+// If dark mode flag is set but no theme specified, use 'dark' theme
+if (darkMode && !selectedTheme) {
+    selectedTheme = 'dark';
+}
+
 // Handle --version flag
 if (args.includes('--version') || args.includes('-v')) {
     console.log(packageJson.version);
@@ -26,8 +40,13 @@ A command-line tool to view Markdown files with Mermaid diagram support
 Usage: mm [options] <markdown-file-or-folder>
 
 Options:
-  -h, --help     Show this help message
-  -v, --version  Show version number
+  -h, --help          Show this help message
+  -v, --version       Show version number
+  -d, --dark          Start in dark mode (shortcut for --theme dark)
+  -t, --theme <name>  Select color theme:
+                      light, dark, github, github-dark, dracula,
+                      nord, solarized-light, solarized-dark,
+                      monokai, one-dark
 
 Examples:
   mm README.md              View a markdown file
@@ -48,8 +67,15 @@ For more information, visit: https://github.com/thieso2/moremaid
     process.exit(0);
 }
 
-// Get the input file or folder (first non-flag argument)
-const inputPath = args.find(arg => !arg.startsWith('-'));
+// Get the input file or folder (first non-flag argument, excluding theme values)
+const inputPath = args.find((arg, index) => {
+    // Skip flags
+    if (arg.startsWith('-')) return false;
+    // Skip if this is a theme value (follows --theme or -t)
+    const prevArg = args[index - 1];
+    if (prevArg && (prevArg === '--theme' || prevArg === '-t')) return false;
+    return true;
+});
 
 if (!inputPath) {
     console.error('Error: No markdown file or folder specified');
@@ -87,7 +113,7 @@ function handleSingleFile(filePath) {
     const title = path.basename(filePath);
 
     // Generate HTML
-    const html = generateHtmlFromMarkdown(markdown, title, false, false);
+    const html = generateHtmlFromMarkdown(markdown, title, false, false, selectedTheme);
 
     // Create a temporary HTML file
     const tempFile = path.join(require('os').tmpdir(), `mm-${Date.now()}.html`);
@@ -284,7 +310,7 @@ async function startFolderServer(folderPath) {
             }
 
             const indexMarkdown = generateFolderIndex(baseDir, mdFiles, port);
-            const indexHtml = generateHtmlFromMarkdown(indexMarkdown, `Index of ${path.basename(baseDir) || 'Directory'}`, true, true);
+            const indexHtml = generateHtmlFromMarkdown(indexMarkdown, `Index of ${path.basename(baseDir) || 'Directory'}`, true, true, selectedTheme);
 
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(indexHtml);
@@ -315,7 +341,7 @@ async function startFolderServer(folderPath) {
 
             try {
                 const markdown = fs.readFileSync(filePath, 'utf-8');
-                const html = generateHtmlFromMarkdown(markdown, path.basename(filePath), false, true);
+                const html = generateHtmlFromMarkdown(markdown, path.basename(filePath), false, true, selectedTheme);
 
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end(html);
@@ -417,7 +443,7 @@ async function startFolderServer(folderPath) {
 }
 
 // Function to generate HTML from markdown
-function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
+function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme = null) {
     // Configure marked
     marked.setOptions({
         breaks: true,
@@ -501,11 +527,265 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
             box-sizing: border-box;
         }
 
+        /* Default Light Theme */
+        :root, [data-theme="light"] {
+            --bg-color: white;
+            --text-color: #333;
+            --heading-color: #2c3e50;
+            --heading2-color: #34495e;
+            --border-color: #ecf0f1;
+            --code-bg: #f4f4f4;
+            --code-color: #d14;
+            --link-color: #3498db;
+            --blockquote-color: #555;
+            --table-header-bg: #f0f0f0;
+            --table-border: #ddd;
+            --file-info-bg: #f5f5f5;
+            --file-info-color: #666;
+            --mermaid-btn-bg: rgba(52, 73, 94, 0.8);
+            --mermaid-btn-hover: rgba(52, 73, 94, 1);
+        }
+
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --heading-color: #61afef;
+            --heading2-color: #56b6c2;
+            --border-color: #3a3a3a;
+            --code-bg: #2d2d2d;
+            --code-color: #e06c75;
+            --link-color: #61afef;
+            --blockquote-color: #abb2bf;
+            --table-header-bg: #2d2d2d;
+            --table-border: #4a4a4a;
+            --file-info-bg: #2d2d2d;
+            --file-info-color: #abb2bf;
+            --mermaid-btn-bg: rgba(97, 175, 239, 0.8);
+            --mermaid-btn-hover: rgba(97, 175, 239, 1);
+        }
+
+        /* GitHub Theme */
+        [data-theme="github"] {
+            --bg-color: #ffffff;
+            --text-color: #24292e;
+            --heading-color: #24292e;
+            --heading2-color: #24292e;
+            --border-color: #e1e4e8;
+            --code-bg: #f6f8fa;
+            --code-color: #e36209;
+            --link-color: #0366d6;
+            --blockquote-color: #6a737d;
+            --table-header-bg: #f6f8fa;
+            --table-border: #e1e4e8;
+            --file-info-bg: #f6f8fa;
+            --file-info-color: #586069;
+            --mermaid-btn-bg: rgba(3, 102, 214, 0.8);
+            --mermaid-btn-hover: rgba(3, 102, 214, 1);
+        }
+
+        /* GitHub Dark Theme */
+        [data-theme="github-dark"] {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --heading-color: #58a6ff;
+            --heading2-color: #58a6ff;
+            --border-color: #30363d;
+            --code-bg: #161b22;
+            --code-color: #ff7b72;
+            --link-color: #58a6ff;
+            --blockquote-color: #8b949e;
+            --table-header-bg: #161b22;
+            --table-border: #30363d;
+            --file-info-bg: #161b22;
+            --file-info-color: #8b949e;
+            --mermaid-btn-bg: rgba(88, 166, 255, 0.8);
+            --mermaid-btn-hover: rgba(88, 166, 255, 1);
+        }
+
+        /* Dracula Theme */
+        [data-theme="dracula"] {
+            --bg-color: #282a36;
+            --text-color: #f8f8f2;
+            --heading-color: #bd93f9;
+            --heading2-color: #ff79c6;
+            --border-color: #44475a;
+            --code-bg: #44475a;
+            --code-color: #ff79c6;
+            --link-color: #8be9fd;
+            --blockquote-color: #6272a4;
+            --table-header-bg: #44475a;
+            --table-border: #6272a4;
+            --file-info-bg: #44475a;
+            --file-info-color: #6272a4;
+            --mermaid-btn-bg: rgba(189, 147, 249, 0.8);
+            --mermaid-btn-hover: rgba(189, 147, 249, 1);
+        }
+
+        /* Nord Theme */
+        [data-theme="nord"] {
+            --bg-color: #2e3440;
+            --text-color: #eceff4;
+            --heading-color: #88c0d0;
+            --heading2-color: #81a1c1;
+            --border-color: #3b4252;
+            --code-bg: #3b4252;
+            --code-color: #d08770;
+            --link-color: #88c0d0;
+            --blockquote-color: #d8dee9;
+            --table-header-bg: #3b4252;
+            --table-border: #4c566a;
+            --file-info-bg: #3b4252;
+            --file-info-color: #d8dee9;
+            --mermaid-btn-bg: rgba(136, 192, 208, 0.8);
+            --mermaid-btn-hover: rgba(136, 192, 208, 1);
+        }
+
+        /* Solarized Light Theme */
+        [data-theme="solarized-light"] {
+            --bg-color: #fdf6e3;
+            --text-color: #657b83;
+            --heading-color: #073642;
+            --heading2-color: #586e75;
+            --border-color: #eee8d5;
+            --code-bg: #eee8d5;
+            --code-color: #dc322f;
+            --link-color: #268bd2;
+            --blockquote-color: #839496;
+            --table-header-bg: #eee8d5;
+            --table-border: #93a1a1;
+            --file-info-bg: #eee8d5;
+            --file-info-color: #839496;
+            --mermaid-btn-bg: rgba(38, 139, 210, 0.8);
+            --mermaid-btn-hover: rgba(38, 139, 210, 1);
+        }
+
+        /* Solarized Dark Theme */
+        [data-theme="solarized-dark"] {
+            --bg-color: #002b36;
+            --text-color: #839496;
+            --heading-color: #93a1a1;
+            --heading2-color: #839496;
+            --border-color: #073642;
+            --code-bg: #073642;
+            --code-color: #dc322f;
+            --link-color: #268bd2;
+            --blockquote-color: #657b83;
+            --table-header-bg: #073642;
+            --table-border: #586e75;
+            --file-info-bg: #073642;
+            --file-info-color: #657b83;
+            --mermaid-btn-bg: rgba(38, 139, 210, 0.8);
+            --mermaid-btn-hover: rgba(38, 139, 210, 1);
+        }
+
+        /* Monokai Theme */
+        [data-theme="monokai"] {
+            --bg-color: #272822;
+            --text-color: #f8f8f2;
+            --heading-color: #66d9ef;
+            --heading2-color: #a6e22e;
+            --border-color: #3e3d32;
+            --code-bg: #3e3d32;
+            --code-color: #f92672;
+            --link-color: #66d9ef;
+            --blockquote-color: #75715e;
+            --table-header-bg: #3e3d32;
+            --table-border: #75715e;
+            --file-info-bg: #3e3d32;
+            --file-info-color: #75715e;
+            --mermaid-btn-bg: rgba(102, 217, 239, 0.8);
+            --mermaid-btn-hover: rgba(102, 217, 239, 1);
+        }
+
+        /* One Dark Theme */
+        [data-theme="one-dark"] {
+            --bg-color: #282c34;
+            --text-color: #abb2bf;
+            --heading-color: #61afef;
+            --heading2-color: #e06c75;
+            --border-color: #3e4451;
+            --code-bg: #3e4451;
+            --code-color: #e06c75;
+            --link-color: #61afef;
+            --blockquote-color: #5c6370;
+            --table-header-bg: #3e4451;
+            --table-border: #4b5263;
+            --file-info-bg: #3e4451;
+            --file-info-color: #5c6370;
+            --mermaid-btn-bg: rgba(97, 175, 239, 0.8);
+            --mermaid-btn-hover: rgba(97, 175, 239, 1);
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: white;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
             padding: 30px;
             line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            min-height: 100vh;
+        }
+
+        .controls-trigger {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 100px;
+            z-index: 999;
+            cursor: default;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .controls-trigger:hover ~ .controls,
+        .controls:hover {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .controls select {
+            background: var(--heading-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s, opacity 0.3s;
+            appearance: none;
+            padding-right: 35px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+        }
+
+        .controls select:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .controls select:focus {
+            outline: 2px solid var(--link-color);
+            outline-offset: 2px;
+        }
+
+        .controls option {
+            background: var(--bg-color);
+            color: var(--text-color);
+            padding: 10px;
         }
 
         .container {
@@ -514,32 +794,32 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
         }
 
         h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #ecf0f1;
+            color: var(--heading-color);
+            border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
 
         h2 {
-            color: #34495e;
+            color: var(--heading2-color);
             margin-top: 30px;
             margin-bottom: 15px;
-            border-bottom: 1px solid #ecf0f1;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 5px;
         }
 
         h3 {
-            color: #34495e;
+            color: var(--heading2-color);
             margin-top: 20px;
             margin-bottom: 10px;
         }
 
         code:not([class*="language-"]) {
-            background: #f4f4f4;
+            background: var(--code-bg);
             padding: 2px 5px;
             border-radius: 3px;
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            color: #d14;
+            color: var(--code-color);
         }
 
         pre {
@@ -574,13 +854,13 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
 
         table th,
         table td {
-            border: 1px solid #ddd;
+            border: 1px solid var(--table-border);
             padding: 10px;
             text-align: left;
         }
 
         table th {
-            background: #f0f0f0;
+            background: var(--table-header-bg);
             font-weight: bold;
         }
 
@@ -594,10 +874,10 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
         }
 
         blockquote {
-            border-left: 4px solid #3498db;
+            border-left: 4px solid var(--link-color);
             padding-left: 20px;
             margin: 20px 0;
-            color: #555;
+            color: var(--blockquote-color);
             font-style: italic;
         }
 
@@ -624,7 +904,7 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(52, 73, 94, 0.8);
+            background: var(--mermaid-btn-bg);
             color: white;
             border: none;
             border-radius: 4px;
@@ -636,11 +916,11 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
         }
 
         .mermaid-fullscreen-btn:hover {
-            background: rgba(52, 73, 94, 1);
+            background: var(--mermaid-btn-hover);
         }
 
         a {
-            color: #3498db;
+            color: var(--link-color);
             text-decoration: none;
         }
 
@@ -654,12 +934,12 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
         }
 
         .file-info {
-            background: #f5f5f5;
+            background: var(--file-info-bg);
             padding: 10px 15px;
             border-radius: 5px;
             margin-bottom: 20px;
             font-size: 14px;
-            color: #666;
+            color: var(--file-info-color);
         }
 
         .nav-bar {
@@ -668,7 +948,7 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
 
         .nav-bar a {
             text-decoration: none;
-            color: #3498db;
+            color: var(--link-color);
             font-size: 14px;
         }
 
@@ -678,6 +958,21 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
     </style>
 </head>
 <body>
+    <div class="controls-trigger"></div>
+    <div class="controls">
+        <select id="themeSelector" title="Select color theme">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="github">📘 GitHub</option>
+            <option value="github-dark">📕 GitHub Dark</option>
+            <option value="dracula">🧛 Dracula</option>
+            <option value="nord">❄️ Nord</option>
+            <option value="solarized-light">🌅 Solarized Light</option>
+            <option value="solarized-dark">🌃 Solarized Dark</option>
+            <option value="monokai">🎨 Monokai</option>
+            <option value="one-dark">🌑 One Dark</option>
+        </select>
+    </div>
     <div class="container">
         ${isServer && !isIndex ? '<div class="nav-bar"><a href="/">← Back to index</a></div>' : ''}
         <div class="file-info">
@@ -687,23 +982,162 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
     </div>
 
     <script>
-        // Initialize mermaid
-        mermaid.initialize({
-            startOnLoad: false,
-            theme: 'default',
-            themeVariables: {
-                primaryColor: '#3498db',
-                primaryTextColor: '#fff',
-                primaryBorderColor: '#2980b9',
-                lineColor: '#5a6c7d',
-                secondaryColor: '#ecf0f1',
-                tertiaryColor: '#fff'
+        // Theme functionality
+        const themes = {
+            light: { name: 'Light', mermaid: 'default' },
+            dark: { name: 'Dark', mermaid: 'dark' },
+            github: { name: 'GitHub', mermaid: 'default' },
+            'github-dark': { name: 'GitHub Dark', mermaid: 'dark' },
+            dracula: { name: 'Dracula', mermaid: 'dark' },
+            nord: { name: 'Nord', mermaid: 'dark' },
+            'solarized-light': { name: 'Solarized Light', mermaid: 'default' },
+            'solarized-dark': { name: 'Solarized Dark', mermaid: 'dark' },
+            monokai: { name: 'Monokai', mermaid: 'dark' },
+            'one-dark': { name: 'One Dark', mermaid: 'dark' }
+        };
+
+        function initTheme() {
+            const forcedTheme = ${forceTheme ? `'${forceTheme}'` : 'null'};
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const defaultTheme = forcedTheme || savedTheme || (systemPrefersDark ? 'dark' : 'light');
+            const theme = themes[defaultTheme] ? defaultTheme : 'light';
+
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeSelector(theme);
+            return theme;
+        }
+
+        function updateThemeSelector(theme) {
+            const selector = document.getElementById('themeSelector');
+            if (selector) {
+                selector.value = theme;
             }
+        }
+
+        function switchTheme(newTheme) {
+            if (!themes[newTheme]) return;
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeSelector(newTheme);
+
+            // Reinitialize mermaid with appropriate theme
+            initializeMermaid(newTheme);
+        }
+
+        // Initialize theme on load
+        const currentTheme = initTheme();
+
+        // Add change event to theme selector
+        document.getElementById('themeSelector').addEventListener('change', function(e) {
+            switchTheme(e.target.value);
         });
+
+        // Initialize mermaid with theme-aware settings
+        function initializeMermaid(theme) {
+            const themeConfig = themes[theme] || themes.light;
+            const mermaidTheme = themeConfig.mermaid;
+
+            const themeVariables = {
+                light: {
+                    primaryColor: '#3498db',
+                    primaryTextColor: '#fff',
+                    primaryBorderColor: '#2980b9',
+                    lineColor: '#5a6c7d',
+                    secondaryColor: '#ecf0f1',
+                    tertiaryColor: '#fff'
+                },
+                dark: {
+                    primaryColor: '#61afef',
+                    primaryTextColor: '#1a1a1a',
+                    primaryBorderColor: '#4b5263',
+                    lineColor: '#abb2bf',
+                    secondaryColor: '#2d2d2d',
+                    tertiaryColor: '#3a3a3a',
+                    background: '#1a1a1a',
+                    mainBkg: '#61afef',
+                    secondBkg: '#56b6c2',
+                    tertiaryBkg: '#98c379'
+                },
+                github: {
+                    primaryColor: '#0366d6',
+                    primaryTextColor: '#fff',
+                    primaryBorderColor: '#0366d6',
+                    lineColor: '#586069',
+                    secondaryColor: '#f6f8fa'
+                },
+                dracula: {
+                    primaryColor: '#bd93f9',
+                    primaryTextColor: '#f8f8f2',
+                    primaryBorderColor: '#6272a4',
+                    lineColor: '#6272a4',
+                    secondaryColor: '#44475a',
+                    background: '#282a36'
+                },
+                nord: {
+                    primaryColor: '#88c0d0',
+                    primaryTextColor: '#2e3440',
+                    primaryBorderColor: '#5e81ac',
+                    lineColor: '#4c566a',
+                    secondaryColor: '#3b4252',
+                    background: '#2e3440'
+                },
+                solarized: {
+                    primaryColor: '#268bd2',
+                    primaryTextColor: '#fdf6e3',
+                    primaryBorderColor: '#93a1a1',
+                    lineColor: '#657b83',
+                    secondaryColor: '#eee8d5'
+                },
+                monokai: {
+                    primaryColor: '#66d9ef',
+                    primaryTextColor: '#272822',
+                    primaryBorderColor: '#75715e',
+                    lineColor: '#75715e',
+                    secondaryColor: '#3e3d32',
+                    background: '#272822'
+                }
+            };
+
+            // Map themes to their mermaid variable sets
+            let variables = themeVariables.light;
+            if (theme === 'dark' || theme === 'one-dark') variables = themeVariables.dark;
+            else if (theme === 'github') variables = themeVariables.github;
+            else if (theme === 'github-dark') variables = { ...themeVariables.github, background: '#0d1117' };
+            else if (theme === 'dracula') variables = themeVariables.dracula;
+            else if (theme === 'nord') variables = themeVariables.nord;
+            else if (theme === 'solarized-light') variables = themeVariables.solarized;
+            else if (theme === 'solarized-dark') variables = { ...themeVariables.solarized, background: '#002b36' };
+            else if (theme === 'monokai') variables = themeVariables.monokai;
+
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: mermaidTheme,
+                themeVariables: variables
+            });
+        }
+
+        // Initialize mermaid
+        initializeMermaid(currentTheme);
 
         // Function to open mermaid in new window
         function openMermaidInNewWindow(graphDefinition) {
             const newWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const bgColors = {
+                light: 'white',
+                dark: '#1a1a1a',
+                github: '#ffffff',
+                'github-dark': '#0d1117',
+                dracula: '#282a36',
+                nord: '#2e3440',
+                'solarized-light': '#fdf6e3',
+                'solarized-dark': '#002b36',
+                monokai: '#272822',
+                'one-dark': '#282c34'
+            };
+            const bgColor = bgColors[currentTheme] || 'white';
 
             const html = '<!' + 'DOCTYPE html>' +
                 '<html lang="en">' +
@@ -720,7 +1154,7 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
                             'justify-content: center;' +
                             'align-items: center;' +
                             'min-height: 100vh;' +
-                            'background: white;' +
+                            'background: ' + bgColor + ';' +
                             'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;' +
                         '}' +
                         '#diagram {' +
@@ -732,17 +1166,35 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer) {
                 '<body>' +
                     '<div id="diagram" class="mermaid">' + graphDefinition + '</div>' +
                     '<script>' +
+                        'const theme = "' + currentTheme + '";' +
+                        'const themes = ' + JSON.stringify(themes) + ';' +
+                        'const themeConfig = themes[theme] || themes.light;' +
+                        'const mermaidTheme = themeConfig.mermaid;' +
+                        '' +
+                        'const themeVariables = {' +
+                            'light: { primaryColor: "#3498db", primaryTextColor: "#fff", primaryBorderColor: "#2980b9", lineColor: "#5a6c7d", secondaryColor: "#ecf0f1", tertiaryColor: "#fff" },' +
+                            'dark: { primaryColor: "#61afef", primaryTextColor: "#1a1a1a", primaryBorderColor: "#4b5263", lineColor: "#abb2bf", secondaryColor: "#2d2d2d", tertiaryColor: "#3a3a3a", background: "#1a1a1a", mainBkg: "#61afef", secondBkg: "#56b6c2", tertiaryBkg: "#98c379" },' +
+                            'github: { primaryColor: "#0366d6", primaryTextColor: "#fff", primaryBorderColor: "#0366d6", lineColor: "#586069", secondaryColor: "#f6f8fa" },' +
+                            'dracula: { primaryColor: "#bd93f9", primaryTextColor: "#f8f8f2", primaryBorderColor: "#6272a4", lineColor: "#6272a4", secondaryColor: "#44475a", background: "#282a36" },' +
+                            'nord: { primaryColor: "#88c0d0", primaryTextColor: "#2e3440", primaryBorderColor: "#5e81ac", lineColor: "#4c566a", secondaryColor: "#3b4252", background: "#2e3440" },' +
+                            'solarized: { primaryColor: "#268bd2", primaryTextColor: "#fdf6e3", primaryBorderColor: "#93a1a1", lineColor: "#657b83", secondaryColor: "#eee8d5" },' +
+                            'monokai: { primaryColor: "#66d9ef", primaryTextColor: "#272822", primaryBorderColor: "#75715e", lineColor: "#75715e", secondaryColor: "#3e3d32", background: "#272822" }' +
+                        '};' +
+                        '' +
+                        'let variables = themeVariables.light;' +
+                        'if (theme === "dark" || theme === "one-dark") variables = themeVariables.dark;' +
+                        'else if (theme === "github") variables = themeVariables.github;' +
+                        'else if (theme === "github-dark") variables = Object.assign({}, themeVariables.github, { background: "#0d1117" });' +
+                        'else if (theme === "dracula") variables = themeVariables.dracula;' +
+                        'else if (theme === "nord") variables = themeVariables.nord;' +
+                        'else if (theme === "solarized-light") variables = themeVariables.solarized;' +
+                        'else if (theme === "solarized-dark") variables = Object.assign({}, themeVariables.solarized, { background: "#002b36" });' +
+                        'else if (theme === "monokai") variables = themeVariables.monokai;' +
+                        '' +
                         'mermaid.initialize({' +
                             'startOnLoad: true,' +
-                            'theme: "default",' +
-                            'themeVariables: {' +
-                                'primaryColor: "#3498db",' +
-                                'primaryTextColor: "#fff",' +
-                                'primaryBorderColor: "#2980b9",' +
-                                'lineColor: "#5a6c7d",' +
-                                'secondaryColor: "#ecf0f1",' +
-                                'tertiaryColor: "#fff"' +
-                            '}' +
+                            'theme: mermaidTheme,' +
+                            'themeVariables: variables' +
                         '});' +
                     '</' + 'script>' +
                 '</body>' +
