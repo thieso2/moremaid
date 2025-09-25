@@ -726,6 +726,7 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
             line-height: 1.6;
             transition: background-color 0.3s, color 0.3s;
             min-height: 100vh;
+            transform-origin: 0 0;
         }
 
         .controls-trigger {
@@ -743,6 +744,9 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
             top: 20px;
             right: 20px;
             z-index: 1000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -786,6 +790,39 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
             background: var(--bg-color);
             color: var(--text-color);
             padding: 10px;
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--heading-color);
+            color: var(--bg-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .zoom-control button {
+            background: transparent;
+            color: var(--bg-color);
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 4px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .zoom-control button:hover {
+            opacity: 1;
+        }
+
+        .zoom-value {
+            min-width: 45px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         .container {
@@ -960,6 +997,12 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
 <body>
     <div class="controls-trigger"></div>
     <div class="controls">
+        <div class="zoom-control">
+            <button id="zoomOut" title="Zoom out">−</button>
+            <span class="zoom-value" id="zoomValue">100%</span>
+            <button id="zoomIn" title="Zoom in">+</button>
+            <button id="zoomReset" title="Reset zoom">⟲</button>
+        </div>
         <select id="themeSelector" title="Select color theme">
             <option value="light">☀️ Light</option>
             <option value="dark">🌙 Dark</option>
@@ -1032,6 +1075,60 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
         // Add change event to theme selector
         document.getElementById('themeSelector').addEventListener('change', function(e) {
             switchTheme(e.target.value);
+        });
+
+        // Zoom functionality
+        let currentZoom = 100;
+
+        function setZoom(scale) {
+            document.body.style.transform = 'scale(' + scale + ')';
+            document.body.style.transformOrigin = '0 0';
+            document.body.style.width = (100 / scale) + '%';
+            document.body.style.height = (100 / scale) + '%';
+        }
+
+        function updateZoom(zoomLevel) {
+            currentZoom = Math.max(50, Math.min(200, zoomLevel));
+            const scale = currentZoom / 100;
+            setZoom(scale);
+            document.getElementById('zoomValue').textContent = currentZoom + '%';
+            localStorage.setItem('zoom', currentZoom);
+        }
+
+        // Initialize zoom from local storage
+        const savedZoom = localStorage.getItem('zoom');
+        if (savedZoom) {
+            currentZoom = parseInt(savedZoom);
+            updateZoom(currentZoom);
+        }
+
+        // Zoom controls
+        document.getElementById('zoomIn').addEventListener('click', function() {
+            updateZoom(currentZoom + 10);
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', function() {
+            updateZoom(currentZoom - 10);
+        });
+
+        document.getElementById('zoomReset').addEventListener('click', function() {
+            updateZoom(100);
+        });
+
+        // Keyboard shortcuts for zoom
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === '=' || e.key === '+') {
+                    e.preventDefault();
+                    updateZoom(currentZoom + 10);
+                } else if (e.key === '-') {
+                    e.preventDefault();
+                    updateZoom(currentZoom - 10);
+                } else if (e.key === '0') {
+                    e.preventDefault();
+                    updateZoom(100);
+                }
+            }
         });
 
         // Initialize mermaid with theme-aware settings
