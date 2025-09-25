@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown & Mermaid Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <!-- Core dependencies first -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup-templating.min.js"></script>
+    <!-- Language components -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-tsx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-cpp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-csharp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-php.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-ruby.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-rust.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-kotlin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-swift.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-docker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-nginx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-apache.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #2c3e50;
+            color: white;
+            overflow-y: auto;
+            padding: 20px;
+            border-right: 1px solid #34495e;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #ecf0f1;
+            border-bottom: 1px solid #34495e;
+            padding-bottom: 10px;
+        }
+
+        .file-tree {
+            list-style: none;
+        }
+
+        .file-tree li {
+            margin: 5px 0;
+        }
+
+        .file-tree a {
+            color: #bdc3c7;
+            text-decoration: none;
+            padding: 5px 10px;
+            display: block;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .file-tree a:hover {
+            background: #34495e;
+            color: white;
+        }
+
+        .file-tree a.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .folder {
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0 5px 0;
+            padding-left: 10px;
+        }
+
+        .file-tree .nested {
+            margin-left: 20px;
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .markdown-body {
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .markdown-body h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .markdown-body h2 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+
+        .markdown-body h3 {
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-body code:not([class*="language-"]) {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            color: #d14;
+        }
+
+        .markdown-body pre {
+            margin: 15px 0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .markdown-body pre code {
+            padding: 0;
+            background: transparent;
+        }
+
+        /* Override Prism theme for better integration */
+        .markdown-body pre[class*="language-"] {
+            margin: 15px 0;
+            padding: 1em;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .markdown-body code[class*="language-"],
+        .markdown-body pre[class*="language-"] {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
+        }
+
+        .markdown-body table {
+            border-collapse: collapse;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .markdown-body table th,
+        .markdown-body table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .markdown-body table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        .markdown-body li {
+            margin: 5px 0;
+        }
+
+        .markdown-body blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #555;
+            font-style: italic;
+        }
+
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            color: #e74c3c;
+            padding: 20px;
+            background: #ffecec;
+            border-radius: 5px;
+            margin: 20px;
+        }
+
+        .welcome {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        .welcome h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>📁 File Browser</h2>
+        <ul class="file-tree" id="fileTree">
+            <li class="loading">Loading files...</li>
+        </ul>
+    </div>
+    <div class="content" id="content">
+        <div class="welcome">
+            <h1>Markdown & Mermaid Viewer</h1>
+            <p>Select a markdown file from the sidebar to view it with rendered Mermaid diagrams</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#3498db',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2980b9',
+                lineColor: '#5a6c7d',
+                secondaryColor: '#ecf0f1',
+                tertiaryColor: '#fff'
+            }
+        });
+
+        // Store the file tree structure
+        let fileTree = {};
+
+        // Load file tree
+        async function loadFileTree() {
+            try {
+                const response = await fetch('/api/files');
+                const files = await response.json();
+                fileTree = files;
+                renderFileTree(files);
+            } catch (error) {
+                console.error('Error loading file tree:', error);
+                document.getElementById('fileTree').innerHTML = '<li class="error">Error loading files</li>';
+            }
+        }
+
+        // Render file tree in sidebar
+        function renderFileTree(tree) {
+            const container = document.getElementById('fileTree');
+            container.innerHTML = renderTreeNodes(tree);
+        }
+
+        function renderTreeNodes(nodes, path = '') {
+            let html = '';
+            for (const [name, value] of Object.entries(nodes)) {
+                const fullPath = path ? `${path}/${name}` : name;
+                if (typeof value === 'object') {
+                    // It's a directory
+                    html += `<li><div class="folder">📂 ${name}</div><ul class="nested">${renderTreeNodes(value, fullPath)}</ul></li>`;
+                } else {
+                    // It's a file
+                    if (name.endsWith('.md')) {
+                        html += `<li><a href="#" onclick="loadFile('${fullPath}'); return false;">📄 ${name}</a></li>`;
+                    }
+                }
+            }
+            return html;
+        }
+
+        // Load and display markdown file
+        async function loadFile(filePath) {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = '<div class="loading">Loading...</div>';
+
+            // Update active state
+            document.querySelectorAll('.file-tree a').forEach(a => {
+                a.classList.remove('active');
+                if (a.textContent.includes(filePath.split('/').pop())) {
+                    a.classList.add('active');
+                }
+            });
+
+            try {
+                const response = await fetch(`/api/file?path=${encodeURIComponent(filePath)}`);
+                if (!response.ok) throw new Error('Failed to load file');
+
+                const markdown = await response.text();
+                const html = await renderMarkdown(markdown);
+
+                contentDiv.innerHTML = `<div class="markdown-body">${html}</div>`;
+
+                // Apply syntax highlighting using Prism
+                setTimeout(() => {
+                    try {
+                        Prism.highlightAllUnder(contentDiv);
+                    } catch (error) {
+                        console.error('Error applying syntax highlighting:', error);
+                        // Fallback - try highlighting individual blocks
+                        const codeBlocks = contentDiv.querySelectorAll('pre code[class*="language-"]');
+                        codeBlocks.forEach(block => {
+                            try {
+                                Prism.highlightElement(block);
+                            } catch (e) {
+                                console.error('Error highlighting block:', e);
+                            }
+                        });
+                    }
+                }, 10);
+
+                // Render mermaid diagrams
+                await renderMermaidDiagrams();
+
+            } catch (error) {
+                console.error('Error loading file:', error);
+                contentDiv.innerHTML = `<div class="error">Error loading file: ${error.message}</div>`;
+            }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            // Convert to string if not already
+            if (typeof text !== 'string') {
+                text = String(text);
+            }
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Render markdown to HTML
+        async function renderMarkdown(markdown) {
+            // Configure marked with default settings
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                langPrefix: 'language-'
+            });
+
+            // Convert markdown to HTML
+            let html = marked.parse(markdown);
+
+            // Fix language aliases after marked generates the HTML
+            const replacements = [
+                ['class="language-js"', 'class="language-javascript"'],
+                ['class="language-ts"', 'class="language-typescript"'],
+                ['class="language-py"', 'class="language-python"'],
+                ['class="language-rb"', 'class="language-ruby"'],
+                ['class="language-yml"', 'class="language-yaml"'],
+                ['class="language-sh"', 'class="language-bash"'],
+                ['class="language-shell"', 'class="language-bash"'],
+                ['class="language-cs"', 'class="language-csharp"']
+            ];
+
+            replacements.forEach(([from, to]) => {
+                html = html.replace(new RegExp(from, 'g'), to);
+            });
+
+            // Process mermaid code blocks
+            html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
+                (match, code) => {
+                    const decodedCode = code.replace(/&lt;/g, '<')
+                                           .replace(/&gt;/g, '>')
+                                           .replace(/&amp;/g, '&')
+                                           .replace(/&quot;/g, '"')
+                                           .replace(/&#39;/g, "'");
+                    return `<div class="mermaid">${decodedCode}</div>`;
+                });
+
+            return html;
+        }
+
+        // Render all mermaid diagrams
+        async function renderMermaidDiagrams() {
+            const diagrams = document.querySelectorAll('.mermaid');
+
+            for (let i = 0; i < diagrams.length; i++) {
+                const diagram = diagrams[i];
+                const graphDefinition = diagram.textContent;
+                const id = `mermaid-${Date.now()}-${i}`;
+
+                try {
+                    const { svg } = await mermaid.render(id, graphDefinition);
+                    diagram.innerHTML = svg;
+                } catch (error) {
+                    console.error('Error rendering mermaid diagram:', error);
+                    diagram.innerHTML = `<div class="error">Error rendering diagram: ${error.message}</div>`;
+                }
+            }
+        }
+
+        // Initialize on load
+        loadFileTree();
+    </script>
+</body>
+</html>
