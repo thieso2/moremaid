@@ -2,6 +2,8 @@
 
 A powerful Markdown viewer with full Mermaid diagram support. View your markdown files with beautifully rendered diagrams, syntax-highlighted code blocks, and a clean reading experience.
 
+https://github.com/user-attachments/assets/demo.mp4
+
 ## Features
 
 - 🎨 **Mermaid Diagram Rendering** - Full support for flowcharts, sequence diagrams, Gantt charts, and more
