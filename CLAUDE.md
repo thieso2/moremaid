@@ -75,3 +75,4 @@ Both implementations support:
 ## Sample Files
 
 The `samples/` directory contains test markdown files with various features including Mermaid diagrams, syntax highlighting examples, and complex markdown structures for testing.
+- check if all used dependencies are compatible with MIT license

@@ -456,7 +456,7 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                     <input type="checkbox" id="contentSearchToggle" />
                     <span>Search in file contents</span>
                 </label>
-                <span style="color: var(--file-info-color); font-size: 12px;">(Searches within markdown files)</span>
+                <span style="color: var(--file-info-color); font-size: 12px;">(Press TAB in search field to toggle)</span>
             </div>
             <input
                 type="text"
@@ -728,7 +728,14 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         searchField.addEventListener('keydown', (e) => {
             const items = searchSuggestions.querySelectorAll('.suggestion-item');
 
-            if (e.key === 'ArrowDown') {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                // Toggle search mode
+                contentSearchToggle.checked = !contentSearchToggle.checked;
+                contentSearchToggle.dispatchEvent(new Event('change'));
+                // Keep focus on search field
+                searchField.focus();
+            } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
                 updateSelectedItem(items);
