@@ -883,7 +883,7 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                                 match.contextLines.forEach(line => {
                                     const lineClass = line.isMatch ? 'match-line' : 'context-line';
                                     const lineText = line.isMatch ? highlightMatch(line.text, query) : line.text;
-                                    snippetHtml += `<div class="${lineClass}">Line ${line.lineNumber}: ${lineText}</div>`;
+                                    snippetHtml += '<div class="' + lineClass + '">Line ' + line.lineNumber + ': ' + lineText + '</div>';
                                 });
                                 snippet.innerHTML = snippetHtml;
                             } else {
