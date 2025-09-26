@@ -728,9 +728,11 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             <option value="book">Book</option>
         </select>
     </div>
-    <div class="container">
-        <div class="file-list" id="fileList">
-            ${generateFileListHTML(fileData)}
+    <div class="zoom-container" id="zoomContainer">
+        <div class="container">
+            <div class="file-list" id="fileList">
+                ${generateFileListHTML(fileData)}
+            </div>
         </div>
     </div>
 
@@ -1151,10 +1153,13 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         let currentZoom = 100;
 
         function setZoom(scale) {
-            document.body.style.transform = 'scale(' + scale + ')';
-            document.body.style.transformOrigin = '0 0';
-            document.body.style.width = (100 / scale) + '%';
-            document.body.style.height = (100 / scale) + '%';
+            const zoomContainer = document.getElementById('zoomContainer');
+            if (zoomContainer) {
+                zoomContainer.style.transform = 'scale(' + scale + ')';
+                zoomContainer.style.transformOrigin = '0 0';
+                zoomContainer.style.width = (100 / scale) + '%';
+                zoomContainer.style.height = (100 / scale) + '%';
+            }
         }
 
         function updateZoom(zoomLevel) {
@@ -1958,12 +1963,17 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
             background: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 30px;
+            padding: 0;
             line-height: var(--line-height);
             font-size: var(--font-size-base);
             transition: background-color 0.3s, color 0.3s;
             min-height: 100vh;
+        }
+
+        .zoom-container {
+            padding: 30px;
             transform-origin: 0 0;
+            min-height: 100vh;
         }
 
         .container {
@@ -2288,12 +2298,14 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
             <option value="book">Book</option>
         </select>
     </div>
-    <div class="container">
-        ${isServer && !isIndex ? '<div class="nav-bar"><a href="#" onclick="history.back(); return false;">← Back to index</a></div>' : ''}
-        <div class="file-info">
-            ${isIndex ? '📁' : '📄'} ${title} • Generated on ${new Date().toLocaleString()}
+    <div class="zoom-container" id="zoomContainer">
+        <div class="container">
+            ${isServer && !isIndex ? '<div class="nav-bar"><a href="#" onclick="history.back(); return false;">← Back to index</a></div>' : ''}
+            <div class="file-info">
+                ${isIndex ? '📁' : '📄'} ${title} • Generated on ${new Date().toLocaleString()}
+            </div>
+            ${htmlContent}
         </div>
-        ${htmlContent}
     </div>
 
     <script>
@@ -2380,10 +2392,13 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
         let currentZoom = 100;
 
         function setZoom(scale) {
-            document.body.style.transform = 'scale(' + scale + ')';
-            document.body.style.transformOrigin = '0 0';
-            document.body.style.width = (100 / scale) + '%';
-            document.body.style.height = (100 / scale) + '%';
+            const zoomContainer = document.getElementById('zoomContainer');
+            if (zoomContainer) {
+                zoomContainer.style.transform = 'scale(' + scale + ')';
+                zoomContainer.style.transformOrigin = '0 0';
+                zoomContainer.style.width = (100 / scale) + '%';
+                zoomContainer.style.height = (100 / scale) + '%';
+            }
         }
 
         function updateZoom(zoomLevel) {
