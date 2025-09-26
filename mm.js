@@ -578,6 +578,15 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             font-weight: 500;
         }
 
+        .content-snippet .context-line {
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .content-snippet .match-line {
+            font-weight: 500;
+        }
+
         .match-count {
             display: inline-block;
             margin-left: 8px;
@@ -867,8 +876,22 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                         snippetsToShow.forEach(match => {
                             const snippet = document.createElement('div');
                             snippet.className = 'content-snippet';
-                            const lineText = match.text.trim();
-                            snippet.innerHTML = 'Line ' + match.lineNumber + ': ' + highlightMatch(lineText, query);
+
+                            // If we have context lines, show all 3 lines
+                            if (match.contextLines && match.contextLines.length > 0) {
+                                let snippetHtml = '';
+                                match.contextLines.forEach(line => {
+                                    const lineClass = line.isMatch ? 'match-line' : 'context-line';
+                                    const lineText = line.isMatch ? highlightMatch(line.text, query) : line.text;
+                                    snippetHtml += `<div class="${lineClass}">Line ${line.lineNumber}: ${lineText}</div>`;
+                                });
+                                snippet.innerHTML = snippetHtml;
+                            } else {
+                                // Fallback to single line display
+                                const lineText = match.text.trim();
+                                snippet.innerHTML = 'Line ' + match.lineNumber + ': ' + highlightMatch(lineText, query);
+                            }
+
                             item.appendChild(snippet);
                         });
                     }
@@ -1287,12 +1310,41 @@ async function startFolderServer(folderPath) {
                         const lines = content.split('\n');
                         const matches = [];
 
-                        // Find matching lines
+                        // Find matching lines with context
                         lines.forEach((line, index) => {
                             if (line.toLowerCase().includes(query.toLowerCase())) {
+                                // Get context: previous line, matching line, and next line
+                                const contextLines = [];
+
+                                // Previous line
+                                if (index > 0) {
+                                    contextLines.push({
+                                        lineNumber: index,
+                                        text: lines[index - 1].trim().substring(0, 200),
+                                        isMatch: false
+                                    });
+                                }
+
+                                // Matching line
+                                contextLines.push({
+                                    lineNumber: index + 1,
+                                    text: line.trim().substring(0, 200),
+                                    isMatch: true
+                                });
+
+                                // Next line
+                                if (index < lines.length - 1) {
+                                    contextLines.push({
+                                        lineNumber: index + 2,
+                                        text: lines[index + 1].trim().substring(0, 200),
+                                        isMatch: false
+                                    });
+                                }
+
                                 matches.push({
                                     lineNumber: index + 1,
-                                    text: line.trim().substring(0, 200) // Limit line length
+                                    text: line.trim().substring(0, 200), // Keep for backward compatibility
+                                    contextLines: contextLines
                                 });
                             }
                         });
