@@ -134,7 +134,7 @@ function handleSingleFile(filePath) {
     }
 
     // Output version info and open the file
-    console.log(`📊 Using Mermaid v10`);
+    console.log(`📊 Moremaid v${packageJson.version}`);
     console.log(`📄 Opening ${path.basename(filePath)} in browser...`);
 
     // Open the file in the default browser
@@ -525,6 +525,9 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         .file-item {
             padding: 4px 0;
             line-height: 1.5;
+        }
+
+        .file-item-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -822,7 +825,8 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             const matchingFiles = new Map(filteredFiles.map(f => [f.path, f]));
             document.querySelectorAll('.file-item').forEach(item => {
                 const filePath = item.getAttribute('data-path');
-                const link = item.querySelector('a');
+                const header = item.querySelector('.file-item-header');
+                const link = header ? header.querySelector('a') : item.querySelector('a');
                 const fileData = matchingFiles.get(filePath);
 
                 // Remove any existing snippets
@@ -1102,10 +1106,12 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         sortedFiles.forEach(file => {
             const fullPath = file.path;
             html += `<div class="file-item" data-path="${file.path}">`;
+            html += '<div class="file-item-header">';
             html += `<a href="/view?file=${encodeURIComponent(file.path)}">${fullPath}</a>`;
             if (file.size && file.modified) {
                 html += `<span class="file-meta">${file.size} • ${file.modified}</span>`;
             }
+            html += '</div>';
             html += '</div>';
         });
         html += '</div>';
@@ -1380,9 +1386,8 @@ async function startFolderServer(folderPath) {
     });
 
     server.listen(port, () => {
-        console.log(`🚀 Moremaid server running at http://localhost:${port}`);
+        console.log(`🚀 Moremaid v${packageJson.version} server running at http://localhost:${port}`);
         console.log(`📁 Serving markdown files from: ${baseDir}`);
-        console.log(`📊 Using Mermaid v10`);
         console.log('Press Ctrl+C to stop the server');
 
         // Open browser
