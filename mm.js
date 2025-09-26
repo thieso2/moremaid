@@ -239,14 +239,25 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
 
         /* Search field styles */
         .search-container {
-            position: relative;
-            margin: 20px 0;
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            padding: 15px;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .search-field {
-            width: 100%;
-            padding: 12px 16px;
-            font-size: 16px;
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 14px;
             border: 2px solid var(--border-color);
             border-radius: 6px;
             background: var(--bg-color);
@@ -259,127 +270,99 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             border-color: var(--link-color);
         }
 
-        .search-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            margin-top: 4px;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            max-height: 400px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-
-        .search-suggestions.active {
-            display: block;
-        }
-
-        .suggestion-item {
-            padding: 10px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.1s;
-        }
-
-        .suggestion-item:last-child {
-            border-bottom: none;
-        }
-
-        .suggestion-item:hover,
-        .suggestion-item.selected {
-            background: var(--code-bg);
-        }
-
-        .suggestion-item .file-name {
-            font-weight: 500;
-            color: var(--text-color);
-        }
-
-        .suggestion-item .file-path {
-            font-size: 12px;
-            color: var(--file-info-color);
-            margin-top: 2px;
-        }
-
-        .suggestion-item mark {
+        /* File list highlighting for search results */
+        .file-item mark {
             background: var(--link-color);
             color: var(--bg-color);
             padding: 0 2px;
             border-radius: 2px;
         }
 
-        .no-results {
-            padding: 20px;
-            text-align: center;
+        .file-item .content-snippet {
+            margin-top: 8px;
+            margin-left: 20px;
+            padding: 8px 12px;
+            background: var(--code-bg);
+            border-left: 3px solid var(--link-color);
+            border-radius: 0 4px 4px 0;
+            font-size: 13px;
+            line-height: 1.5;
             color: var(--file-info-color);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
         }
 
-        .search-shortcut {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
+        .file-item .content-snippet mark {
+            background: var(--link-color);
+            color: var(--bg-color);
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .file-item .match-count {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 6px;
+            background: var(--link-color);
+            color: var(--bg-color);
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .no-results {
+            padding: 40px;
+            text-align: center;
             color: var(--file-info-color);
-            background: var(--code-bg);
+            font-size: 16px;
+        }
+
+        .search-scope {
+            font-size: 13px;
+            color: var(--file-info-color);
+            white-space: nowrap;
             padding: 4px 8px;
             border-radius: 4px;
-            pointer-events: none;
+            transition: all 0.2s;
+        }
+
+        .search-scope.content-mode {
+            background: var(--link-color);
+            color: var(--bg-color);
+            font-weight: 500;
         }
 
         .file-list {
-            transition: opacity 0.2s;
+            margin-top: 80px;
         }
 
-        .file-list.filtering {
-            opacity: 0.5;
-        }
-
-        .file-group {
-            margin-bottom: 30px;
-        }
-
-        .file-group h2 {
+        .file-list-flat {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            gap: 2px;
         }
 
-        .file-group .count {
+        .file-item {
+            padding: 4px 0;
+            line-height: 1.5;
+        }
+
+        .file-item a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 14px;
-            color: var(--file-info-color);
-            font-weight: normal;
+        }
+
+        .file-item a:hover {
+            color: var(--link-color);
+            text-decoration: underline;
         }
 
         .hidden {
             display: none !important;
         }
 
-        /* Content search toggle */
-        .search-mode-toggle {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .search-mode-toggle label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            color: var(--text-color);
-        }
-
-        .search-mode-toggle input[type="checkbox"] {
-            cursor: pointer;
-        }
 
         /* Content snippet styles */
         .content-snippet {
@@ -415,6 +398,17 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
     </style>
 </head>
 <body>
+    <div class="search-container">
+        <input
+            type="text"
+            class="search-field"
+            id="searchField"
+            placeholder="Search ${files.length} files (TAB to toggle mode)"
+            autocomplete="off"
+        />
+        <span class="search-scope" id="searchScope">in names & paths</span>
+    </div>
+
     <div class="controls-trigger"></div>
     <div class="controls">
         <div class="zoom-control">
@@ -437,39 +431,12 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         </select>
     </div>
     <div class="container">
-        <div class="file-info">
-            📁 Index of ${folderName} • Generated on ${new Date().toLocaleString()}
-        </div>
-
-        <h1>📁 ${folderName}</h1>
-
-        <div class="search-container">
-            <div class="search-mode-toggle">
-                <label>
-                    <input type="checkbox" id="contentSearchToggle" />
-                    <span>Search in file contents (TAB to toggle)</span>
-                </label>
-            </div>
-            <input
-                type="text"
-                class="search-field"
-                id="searchField"
-                placeholder="Search ${files.length} markdown files... (Press '/' to focus)"
-                autocomplete="off"
-            />
-            <span class="search-shortcut" id="searchShortcut">/</span>
-            <div class="search-suggestions" id="searchSuggestions"></div>
-        </div>
-
-        <p>Found ${files.length} markdown file${files.length === 1 ? '' : 's'}:</p>
-
         <div class="file-list" id="fileList">
             ${generateFileListHTML(fileData)}
         </div>
 
         <hr>
         <p><em>Generated by moremaid on ${new Date().toLocaleString()}</em></p>
-        <p><em>Server running on http://localhost:${port} • Press Ctrl+C to stop</em></p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7/dist/umd/index.min.js"></script>
@@ -493,10 +460,40 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
 
         // Search functionality
         const searchField = document.getElementById('searchField');
-        const searchSuggestions = document.getElementById('searchSuggestions');
-        const searchShortcut = document.getElementById('searchShortcut');
+        const searchScope = document.getElementById('searchScope');
         const fileList = document.getElementById('fileList');
-        let selectedIndex = -1;
+        let searchInContent = false;
+
+        // Get initial search state from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialQuery = urlParams.get('q') || '';
+        const initialMode = urlParams.get('mode') === 'content';
+
+        // Set initial state
+        if (initialQuery) {
+            searchField.value = initialQuery;
+        }
+        if (initialMode) {
+            searchInContent = true;
+            searchScope.textContent = 'in file contents';
+            searchScope.classList.add('content-mode');
+        }
+
+        // Update URL without page reload
+        function updateURL(query, mode) {
+            const url = new URL(window.location);
+            if (query) {
+                url.searchParams.set('q', query);
+            } else {
+                url.searchParams.delete('q');
+            }
+            if (mode) {
+                url.searchParams.set('mode', 'content');
+            } else {
+                url.searchParams.delete('mode');
+            }
+            window.history.replaceState({}, '', url);
+        }
 
         // Highlight matching text
         function highlightMatch(text, query) {
@@ -526,9 +523,6 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         // Filter files based on query
         async function filterFiles(query) {
             if (!query) return allFiles;
-
-            const contentSearchToggle = document.getElementById('contentSearchToggle');
-            const searchInContent = contentSearchToggle && contentSearchToggle.checked;
 
             if (searchInContent) {
                 // Use API for content search
@@ -570,159 +564,139 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             });
         }
 
-        // Update suggestions
+        // Update filtered file list
         async function updateSuggestions(query) {
             const filteredFiles = await filterFiles(query);
-            selectedIndex = -1;
+
+            // Update URL with current search state
+            updateURL(query, searchInContent);
 
             if (!query) {
-                searchSuggestions.classList.remove('active');
-                searchShortcut.style.display = 'block';
-                fileList.classList.remove('filtering');
                 // Show all files
                 document.querySelectorAll('.file-item').forEach(item => {
                     item.classList.remove('hidden');
+
+                    // Remove any content snippets
+                    const snippets = item.querySelectorAll('.content-snippet');
+                    snippets.forEach(s => s.remove());
+
+                    const link = item.querySelector('a');
+                    if (link) {
+                        // Remove highlighting and match counts
+                        const originalText = link.textContent.replace(/ \d+ match(es)?$/, '');
+                        link.innerHTML = originalText;
+                    }
                 });
-                document.querySelectorAll('.file-group').forEach(group => {
-                    group.classList.remove('hidden');
-                    updateGroupCount(group);
-                });
+
+                // Remove "no results" message if it exists
+                const noResults = fileList.querySelector('.no-results');
+                if (noResults) {
+                    noResults.remove();
+                }
                 return;
             }
 
-            searchShortcut.style.display = 'none';
-            fileList.classList.add('filtering');
-
             if (filteredFiles.length === 0) {
-                searchSuggestions.innerHTML = '<div class="no-results">No files found</div>';
-                searchSuggestions.classList.add('active');
                 // Hide all files
                 document.querySelectorAll('.file-item').forEach(item => {
                     item.classList.add('hidden');
                 });
-                document.querySelectorAll('.file-group').forEach(group => {
-                    group.classList.add('hidden');
-                });
+
+                // Show "no results" message in the file list
+                let noResults = fileList.querySelector('.no-results');
+                if (!noResults) {
+                    noResults = document.createElement('div');
+                    noResults.className = 'no-results';
+                    fileList.appendChild(noResults);
+                }
+                noResults.textContent = 'No files found matching "' + query + '"';
                 return;
             }
 
-            // Show suggestions
-            const html = filteredFiles.slice(0, 10).map((file, index) => {
-                const fullPath = file.directory ? file.directory + '/' + file.fileName : file.fileName;
-                const highlightedFileName = highlightMatch(file.fileName, query);
-                const highlightedPath = file.directory ? highlightMatch(file.directory, query) : '';
+            // Remove "no results" message if it exists
+            const noResults = fileList.querySelector('.no-results');
+            if (noResults) {
+                noResults.remove();
+            }
 
-                let itemHtml = '<div class="suggestion-item" data-index="' + index + '" data-path="' + file.path + '">' +
-                    '<div class="file-name">' +
-                        highlightedFileName +
-                    '</div>' +
-                    (file.directory ? '<div class="file-path">' + highlightedPath + '/</div>' : '');
-
-                // Add content matches if available
-                if (file.matches && file.matches.length > 0) {
-                    const match = file.matches[0];
-                    itemHtml += '<div class="content-snippet">' +
-                        'Line ' + match.lineNumber + ': ' + highlightMatch(match.text, query) +
-                        '</div>';
-                }
-
-                itemHtml += '</div>';
-                return itemHtml;
-            }).join('');
-
-            searchSuggestions.innerHTML = html;
-            searchSuggestions.classList.add('active');
-
-            // Update file list to show only matching files
-            const matchingPaths = new Set(filteredFiles.map(f => f.path));
+            // Update file list to show only matching files with highlighting
+            const matchingFiles = new Map(filteredFiles.map(f => [f.path, f]));
             document.querySelectorAll('.file-item').forEach(item => {
                 const filePath = item.getAttribute('data-path');
-                if (matchingPaths.has(filePath)) {
+                const link = item.querySelector('a');
+                const fileData = matchingFiles.get(filePath);
+
+                // Remove any existing snippets
+                const existingSnippets = item.querySelectorAll('.content-snippet');
+                existingSnippets.forEach(s => s.remove());
+
+                if (fileData) {
                     item.classList.remove('hidden');
+                    // Add highlighting to visible files
+                    if (link) {
+                        const originalText = link.textContent;
+                        link.innerHTML = highlightMatch(originalText, query);
+
+                        // Add match count for content searches
+                        if (fileData.matches && fileData.matches.length > 0) {
+                            const countSpan = document.createElement('span');
+                            countSpan.className = 'match-count';
+                            countSpan.textContent = fileData.matches.length + ' match' + (fileData.matches.length > 1 ? 'es' : '');
+                            link.appendChild(countSpan);
+                        }
+                    }
+
+                    // Add content snippets if available (only in content search mode)
+                    if (fileData.matches && fileData.matches.length > 0 && searchInContent) {
+                        // Show up to 3 snippets per file
+                        const snippetsToShow = fileData.matches.slice(0, 3);
+                        snippetsToShow.forEach(match => {
+                            const snippet = document.createElement('div');
+                            snippet.className = 'content-snippet';
+                            const lineText = match.text.trim();
+                            snippet.innerHTML = 'Line ' + match.lineNumber + ': ' + highlightMatch(lineText, query);
+                            item.appendChild(snippet);
+                        });
+                    }
                 } else {
                     item.classList.add('hidden');
-                }
-            });
-
-            // Update group visibility
-            document.querySelectorAll('.file-group').forEach(group => {
-                const visibleItems = group.querySelectorAll('.file-item:not(.hidden)').length;
-                if (visibleItems === 0) {
-                    group.classList.add('hidden');
-                } else {
-                    group.classList.remove('hidden');
-                    updateGroupCount(group, visibleItems);
+                    // Remove highlighting from hidden files
+                    if (link) {
+                        const originalText = link.textContent.replace(/ \d+ match(es)?$/, ''); // Remove match count
+                        link.innerHTML = originalText;
+                    }
                 }
             });
         }
-
-        // Update group file count
-        function updateGroupCount(group, count = null) {
-            const countEl = group.querySelector('.count');
-            if (countEl) {
-                const visibleCount = count !== null ? count : group.querySelectorAll('.file-item:not(.hidden)').length;
-                const totalCount = group.querySelectorAll('.file-item').length;
-                if (searchField.value && visibleCount < totalCount) {
-                    countEl.textContent = '(' + visibleCount + '/' + totalCount + ')';
-                } else {
-                    countEl.textContent = '(' + totalCount + ')';
-                }
-            }
-        }
-
-        // Handle suggestion click
-        searchSuggestions.addEventListener('click', (e) => {
-            const item = e.target.closest('.suggestion-item');
-            if (item) {
-                const path = item.getAttribute('data-path');
-                window.location.href = '/view?file=' + encodeURIComponent(path);
-            }
-        });
 
         // Handle keyboard navigation
         searchField.addEventListener('keydown', (e) => {
-            const items = searchSuggestions.querySelectorAll('.suggestion-item');
-
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-                updateSelectedItem(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectedIndex = Math.max(selectedIndex - 1, -1);
-                updateSelectedItem(items);
-            } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                e.preventDefault();
-                const path = items[selectedIndex].getAttribute('data-path');
-                window.location.href = '/view?file=' + encodeURIComponent(path);
-            } else if (e.key === 'Escape') {
+            if (e.key === 'Escape') {
                 searchField.value = '';
                 updateSuggestions('');
                 searchField.blur();
             } else if (e.key === 'Tab') {
                 e.preventDefault();
-                const contentSearchToggle = document.getElementById('contentSearchToggle');
-                if (contentSearchToggle) {
-                    contentSearchToggle.checked = !contentSearchToggle.checked;
-                    // Re-run search with new mode
-                    if (searchField.value) {
-                        updateSuggestions(searchField.value);
-                    }
+                searchInContent = !searchInContent;
+
+                // Update UI
+                if (searchInContent) {
+                    searchScope.textContent = 'in file contents';
+                    searchScope.classList.add('content-mode');
+                } else {
+                    searchScope.textContent = 'in names & paths';
+                    searchScope.classList.remove('content-mode');
+                }
+
+                // Update URL with new mode
+                updateURL(searchField.value, searchInContent);
+
+                // Re-run search with new mode
+                if (searchField.value) {
+                    updateSuggestions(searchField.value);
                 }
             }
         });
-
-        // Update selected item highlighting
-        function updateSelectedItem(items) {
-            items.forEach((item, index) => {
-                if (index === selectedIndex) {
-                    item.classList.add('selected');
-                    item.scrollIntoView({ block: 'nearest' });
-                } else {
-                    item.classList.remove('selected');
-                }
-            });
-        }
 
         // Handle input changes
         searchField.addEventListener('input', (e) => {
@@ -736,25 +710,7 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             }
         });
 
-        // Handle blur
-        searchField.addEventListener('blur', (e) => {
-            // Delay to allow click on suggestion
-            setTimeout(() => {
-                if (!searchSuggestions.contains(e.relatedTarget)) {
-                    searchSuggestions.classList.remove('active');
-                }
-            }, 200);
-        });
 
-        // Content search toggle handler
-        const contentSearchToggle = document.getElementById('contentSearchToggle');
-        if (contentSearchToggle) {
-            contentSearchToggle.addEventListener('change', () => {
-                if (searchField.value) {
-                    updateSuggestions(searchField.value);
-                }
-            });
-        }
 
         // Global keyboard shortcut
         document.addEventListener('keydown', (e) => {
@@ -766,6 +722,34 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                 }
             }
         });
+
+        // Handle browser back/forward navigation
+        window.addEventListener('popstate', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q') || '';
+            const mode = urlParams.get('mode') === 'content';
+
+            // Update search field and mode
+            searchField.value = query;
+            searchInContent = mode;
+
+            // Update UI
+            if (searchInContent) {
+                searchScope.textContent = 'in file contents';
+                searchScope.classList.add('content-mode');
+            } else {
+                searchScope.textContent = 'in names & paths';
+                searchScope.classList.remove('content-mode');
+            }
+
+            // Run search
+            updateSuggestions(query);
+        });
+
+        // Run initial search if there's a query in the URL
+        if (initialQuery) {
+            updateSuggestions(initialQuery);
+        }
 
         // Theme functionality (copy from generateHtmlFromMarkdown)
         const themes = {
@@ -874,31 +858,17 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
 
     // Helper function to generate file list HTML
     function generateFileListHTML(fileData) {
-        const filesByDir = {};
-        fileData.forEach(file => {
-            const dir = file.directory || '.';
-            if (!filesByDir[dir]) filesByDir[dir] = [];
-            filesByDir[dir].push(file);
-        });
+        // Sort files by full path
+        const sortedFiles = fileData.sort((a, b) => a.path.localeCompare(b.path));
 
-        let html = '';
-        Object.keys(filesByDir).sort().forEach(dir => {
-            const files = filesByDir[dir];
-            html += '<div class="file-group">';
-
-            if (dir !== '.') {
-                html += `<h2>📂 ${dir} <span class="count">(${files.length})</span></h2>`;
-            }
-
-            html += '<ul>';
-            files.forEach(file => {
-                html += `<li class="file-item" data-path="${file.path}">`;
-                html += `<a href="/view?file=${encodeURIComponent(file.path)}">${file.fileName}</a>`;
-                html += '</li>';
-            });
-            html += '</ul>';
+        let html = '<div class="file-list-flat">';
+        sortedFiles.forEach(file => {
+            const fullPath = file.path;
+            html += `<div class="file-item" data-path="${file.path}">`;
+            html += `<a href="/view?file=${encodeURIComponent(file.path)}">${fullPath}</a>`;
             html += '</div>';
         });
+        html += '</div>';
 
         return html;
     }
@@ -1162,7 +1132,7 @@ async function startFolderServer(folderPath) {
     <div class="container">
         <h1>404 - Page Not Found</h1>
         <p>The requested path "${pathname}" was not found.</p>
-        <a href="/">← Back to Index</a>
+        <a href="#" onclick="history.back(); return false;">← Back to Index</a>
     </div>
 </body>
 </html>`);
@@ -1780,7 +1750,7 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
         </select>
     </div>
     <div class="container">
-        ${isServer && !isIndex ? '<div class="nav-bar"><a href="/">← Back to index</a></div>' : ''}
+        ${isServer && !isIndex ? '<div class="nav-bar"><a href="#" onclick="history.back(); return false;">← Back to index</a></div>' : ''}
         <div class="file-info">
             ${isIndex ? '📁' : '📄'} ${title} • Generated on ${new Date().toLocaleString()}
         </div>
