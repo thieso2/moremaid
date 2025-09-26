@@ -206,6 +206,569 @@ function generateFolderIndex(folderPath, files, port = 8080) {
     return markdown;
 }
 
+// Function to generate index HTML with search functionality
+function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null) {
+    const folderName = path.basename(folderPath) || 'Directory';
+
+    // Prepare file data for JavaScript
+    const fileData = files.map(file => ({
+        path: file,
+        fileName: path.basename(file),
+        directory: path.dirname(file) === '.' ? '' : path.dirname(file)
+    }));
+
+    // Get theme CSS variables from generateHtmlFromMarkdown
+    const dummyHtml = generateHtmlFromMarkdown('', 'dummy', true, true, forceTheme);
+    const styleMatch = dummyHtml.match(/<style>([\s\S]*?)<\/style>/);
+    const styles = styleMatch ? styleMatch[1] : '';
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index of ${folderName}</title>
+    <style>
+        ${styles}
+
+        /* Search field styles */
+        .search-container {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .search-field {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: border-color 0.2s;
+        }
+
+        .search-field:focus {
+            outline: none;
+            border-color: var(--link-color);
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-suggestions.active {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.1s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item.selected {
+            background: var(--code-bg);
+        }
+
+        .suggestion-item .file-name {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .suggestion-item .file-path {
+            font-size: 12px;
+            color: var(--file-info-color);
+            margin-top: 2px;
+        }
+
+        .suggestion-item mark {
+            background: var(--link-color);
+            color: var(--bg-color);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: var(--file-info-color);
+        }
+
+        .search-shortcut {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: var(--file-info-color);
+            background: var(--code-bg);
+            padding: 4px 8px;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .file-list {
+            transition: opacity 0.2s;
+        }
+
+        .file-list.filtering {
+            opacity: 0.5;
+        }
+
+        .file-group {
+            margin-bottom: 30px;
+        }
+
+        .file-group h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-group .count {
+            font-size: 14px;
+            color: var(--file-info-color);
+            font-weight: normal;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls-trigger"></div>
+    <div class="controls">
+        <div class="zoom-control">
+            <button id="zoomOut" title="Zoom out">−</button>
+            <span class="zoom-value" id="zoomValue">100%</span>
+            <button id="zoomIn" title="Zoom in">+</button>
+            <button id="zoomReset" title="Reset zoom">⟲</button>
+        </div>
+        <select id="themeSelector" title="Select color theme">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="github">📘 GitHub</option>
+            <option value="github-dark">📕 GitHub Dark</option>
+            <option value="dracula">🧛 Dracula</option>
+            <option value="nord">❄️ Nord</option>
+            <option value="solarized-light">🌅 Solarized Light</option>
+            <option value="solarized-dark">🌃 Solarized Dark</option>
+            <option value="monokai">🎨 Monokai</option>
+            <option value="one-dark">🌑 One Dark</option>
+        </select>
+    </div>
+    <div class="container">
+        <div class="file-info">
+            📁 Index of ${folderName} • Generated on ${new Date().toLocaleString()}
+        </div>
+
+        <h1>📁 ${folderName}</h1>
+
+        <div class="search-container">
+            <input
+                type="text"
+                class="search-field"
+                id="searchField"
+                placeholder="Search ${files.length} markdown files... (Press '/' to focus)"
+                autocomplete="off"
+            />
+            <span class="search-shortcut" id="searchShortcut">/</span>
+            <div class="search-suggestions" id="searchSuggestions"></div>
+        </div>
+
+        <p>Found ${files.length} markdown file${files.length === 1 ? '' : 's'}:</p>
+
+        <div class="file-list" id="fileList">
+            ${generateFileListHTML(fileData)}
+        </div>
+
+        <hr>
+        <p><em>Generated by moremaid on ${new Date().toLocaleString()}</em></p>
+        <p><em>Server running on http://localhost:${port} • Press Ctrl+C to stop</em></p>
+    </div>
+
+    <script>
+        // File data
+        const allFiles = ${JSON.stringify(fileData)};
+
+        // Search functionality
+        const searchField = document.getElementById('searchField');
+        const searchSuggestions = document.getElementById('searchSuggestions');
+        const searchShortcut = document.getElementById('searchShortcut');
+        const fileList = document.getElementById('fileList');
+        let selectedIndex = -1;
+
+        // Highlight matching text
+        function highlightMatch(text, query) {
+            if (!query) return text;
+            // Simple case-insensitive highlighting without regex
+            const lowerText = text.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            let result = '';
+            let lastIndex = 0;
+            let index = lowerText.indexOf(lowerQuery);
+
+            while (index !== -1) {
+                result += text.slice(lastIndex, index);
+                result += '<mark>' + text.slice(index, index + query.length) + '</mark>';
+                lastIndex = index + query.length;
+                index = lowerText.indexOf(lowerQuery, lastIndex);
+            }
+            result += text.slice(lastIndex);
+            return result;
+        }
+
+        // Filter files based on query
+        function filterFiles(query) {
+            if (!query) return allFiles;
+
+            const lowerQuery = query.toLowerCase();
+            return allFiles.filter(file => {
+                const fullPath = file.directory ? file.directory + '/' + file.fileName : file.fileName;
+                return fullPath.toLowerCase().includes(lowerQuery);
+            }).sort((a, b) => {
+                // Sort by relevance (filename matches first, then path matches)
+                const aFileName = a.fileName.toLowerCase();
+                const bFileName = b.fileName.toLowerCase();
+                const aPath = (a.directory + '/' + a.fileName).toLowerCase();
+                const bPath = (b.directory + '/' + b.fileName).toLowerCase();
+
+                const aFileMatch = aFileName.includes(lowerQuery);
+                const bFileMatch = bFileName.includes(lowerQuery);
+
+                if (aFileMatch && !bFileMatch) return -1;
+                if (!aFileMatch && bFileMatch) return 1;
+
+                // If both match in filename or both don't, sort by position
+                const aIndex = aFileMatch ? aFileName.indexOf(lowerQuery) : aPath.indexOf(lowerQuery);
+                const bIndex = bFileMatch ? bFileName.indexOf(lowerQuery) : bPath.indexOf(lowerQuery);
+
+                return aIndex - bIndex;
+            });
+        }
+
+        // Update suggestions
+        function updateSuggestions(query) {
+            const filteredFiles = filterFiles(query);
+            selectedIndex = -1;
+
+            if (!query) {
+                searchSuggestions.classList.remove('active');
+                searchShortcut.style.display = 'block';
+                fileList.classList.remove('filtering');
+                // Show all files
+                document.querySelectorAll('.file-item').forEach(item => {
+                    item.classList.remove('hidden');
+                });
+                document.querySelectorAll('.file-group').forEach(group => {
+                    group.classList.remove('hidden');
+                    updateGroupCount(group);
+                });
+                return;
+            }
+
+            searchShortcut.style.display = 'none';
+            fileList.classList.add('filtering');
+
+            if (filteredFiles.length === 0) {
+                searchSuggestions.innerHTML = '<div class="no-results">No files found</div>';
+                searchSuggestions.classList.add('active');
+                // Hide all files
+                document.querySelectorAll('.file-item').forEach(item => {
+                    item.classList.add('hidden');
+                });
+                document.querySelectorAll('.file-group').forEach(group => {
+                    group.classList.add('hidden');
+                });
+                return;
+            }
+
+            // Show suggestions
+            const html = filteredFiles.slice(0, 10).map((file, index) => {
+                const fullPath = file.directory ? file.directory + '/' + file.fileName : file.fileName;
+                const highlightedFileName = highlightMatch(file.fileName, query);
+                const highlightedPath = file.directory ? highlightMatch(file.directory, query) : '';
+
+                return \`<div class="suggestion-item" data-index="\${index}" data-path="\${file.path}">
+                    <div class="file-name">\${highlightedFileName}</div>
+                    \${file.directory ? \`<div class="file-path">\${highlightedPath}/</div>\` : ''}
+                </div>\`;
+            }).join('');
+
+            searchSuggestions.innerHTML = html;
+            searchSuggestions.classList.add('active');
+
+            // Update file list to show only matching files
+            const matchingPaths = new Set(filteredFiles.map(f => f.path));
+            document.querySelectorAll('.file-item').forEach(item => {
+                const filePath = item.getAttribute('data-path');
+                if (matchingPaths.has(filePath)) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+
+            // Update group visibility
+            document.querySelectorAll('.file-group').forEach(group => {
+                const visibleItems = group.querySelectorAll('.file-item:not(.hidden)').length;
+                if (visibleItems === 0) {
+                    group.classList.add('hidden');
+                } else {
+                    group.classList.remove('hidden');
+                    updateGroupCount(group, visibleItems);
+                }
+            });
+        }
+
+        // Update group file count
+        function updateGroupCount(group, count = null) {
+            const countEl = group.querySelector('.count');
+            if (countEl) {
+                const visibleCount = count !== null ? count : group.querySelectorAll('.file-item:not(.hidden)').length;
+                const totalCount = group.querySelectorAll('.file-item').length;
+                if (searchField.value && visibleCount < totalCount) {
+                    countEl.textContent = \`(\${visibleCount}/\${totalCount})\`;
+                } else {
+                    countEl.textContent = \`(\${totalCount})\`;
+                }
+            }
+        }
+
+        // Handle suggestion click
+        searchSuggestions.addEventListener('click', (e) => {
+            const item = e.target.closest('.suggestion-item');
+            if (item) {
+                const path = item.getAttribute('data-path');
+                window.location.href = '/view?file=' + encodeURIComponent(path);
+            }
+        });
+
+        // Handle keyboard navigation
+        searchField.addEventListener('keydown', (e) => {
+            const items = searchSuggestions.querySelectorAll('.suggestion-item');
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelectedItem(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelectedItem(items);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                const path = items[selectedIndex].getAttribute('data-path');
+                window.location.href = '/view?file=' + encodeURIComponent(path);
+            } else if (e.key === 'Escape') {
+                searchField.value = '';
+                updateSuggestions('');
+                searchField.blur();
+            }
+        });
+
+        // Update selected item highlighting
+        function updateSelectedItem(items) {
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // Handle input changes
+        searchField.addEventListener('input', (e) => {
+            updateSuggestions(e.target.value);
+        });
+
+        // Handle focus
+        searchField.addEventListener('focus', () => {
+            if (searchField.value) {
+                updateSuggestions(searchField.value);
+            }
+        });
+
+        // Handle blur
+        searchField.addEventListener('blur', (e) => {
+            // Delay to allow click on suggestion
+            setTimeout(() => {
+                if (!searchSuggestions.contains(e.relatedTarget)) {
+                    searchSuggestions.classList.remove('active');
+                }
+            }, 200);
+        });
+
+        // Global keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (document.activeElement !== searchField) {
+                    e.preventDefault();
+                    searchField.focus();
+                    searchField.select();
+                }
+            }
+        });
+
+        // Theme functionality (copy from generateHtmlFromMarkdown)
+        const themes = {
+            light: { name: 'Light', mermaid: 'default' },
+            dark: { name: 'Dark', mermaid: 'dark' },
+            github: { name: 'GitHub', mermaid: 'default' },
+            'github-dark': { name: 'GitHub Dark', mermaid: 'dark' },
+            dracula: { name: 'Dracula', mermaid: 'dark' },
+            nord: { name: 'Nord', mermaid: 'dark' },
+            'solarized-light': { name: 'Solarized Light', mermaid: 'default' },
+            'solarized-dark': { name: 'Solarized Dark', mermaid: 'dark' },
+            monokai: { name: 'Monokai', mermaid: 'dark' },
+            'one-dark': { name: 'One Dark', mermaid: 'dark' }
+        };
+
+        function initTheme() {
+            const forcedTheme = ${forceTheme ? `'${forceTheme}'` : 'null'};
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const defaultTheme = forcedTheme || savedTheme || (systemPrefersDark ? 'dark' : 'light');
+            const theme = themes[defaultTheme] ? defaultTheme : 'light';
+
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeSelector(theme);
+            return theme;
+        }
+
+        function updateThemeSelector(theme) {
+            const selector = document.getElementById('themeSelector');
+            if (selector) {
+                selector.value = theme;
+            }
+        }
+
+        function switchTheme(newTheme) {
+            if (!themes[newTheme]) return;
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeSelector(newTheme);
+        }
+
+        // Initialize theme
+        initTheme();
+
+        // Theme selector change event
+        document.getElementById('themeSelector').addEventListener('change', function(e) {
+            switchTheme(e.target.value);
+        });
+
+        // Zoom functionality (copy from generateHtmlFromMarkdown)
+        let currentZoom = 100;
+
+        function setZoom(scale) {
+            document.body.style.transform = 'scale(' + scale + ')';
+            document.body.style.transformOrigin = '0 0';
+            document.body.style.width = (100 / scale) + '%';
+            document.body.style.height = (100 / scale) + '%';
+        }
+
+        function updateZoom(zoomLevel) {
+            currentZoom = Math.max(50, Math.min(200, zoomLevel));
+            const scale = currentZoom / 100;
+            setZoom(scale);
+            document.getElementById('zoomValue').textContent = currentZoom + '%';
+            localStorage.setItem('zoom', currentZoom);
+        }
+
+        // Initialize zoom from local storage
+        const savedZoom = localStorage.getItem('zoom');
+        if (savedZoom) {
+            currentZoom = parseInt(savedZoom);
+            updateZoom(currentZoom);
+        }
+
+        // Zoom controls
+        document.getElementById('zoomIn').addEventListener('click', function() {
+            updateZoom(currentZoom + 10);
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', function() {
+            updateZoom(currentZoom - 10);
+        });
+
+        document.getElementById('zoomReset').addEventListener('click', function() {
+            updateZoom(100);
+        });
+
+        // Keyboard shortcuts for zoom
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === '=' || e.key === '+') {
+                    e.preventDefault();
+                    updateZoom(currentZoom + 10);
+                } else if (e.key === '-') {
+                    e.preventDefault();
+                    updateZoom(currentZoom - 10);
+                } else if (e.key === '0') {
+                    e.preventDefault();
+                    updateZoom(100);
+                }
+            }
+        });
+    </script>
+</body>
+</html>`;
+
+    // Helper function to generate file list HTML
+    function generateFileListHTML(fileData) {
+        const filesByDir = {};
+        fileData.forEach(file => {
+            const dir = file.directory || '.';
+            if (!filesByDir[dir]) filesByDir[dir] = [];
+            filesByDir[dir].push(file);
+        });
+
+        let html = '';
+        Object.keys(filesByDir).sort().forEach(dir => {
+            const files = filesByDir[dir];
+            html += '<div class="file-group">';
+
+            if (dir !== '.') {
+                html += `<h2>📂 ${dir} <span class="count">(${files.length})</span></h2>`;
+            }
+
+            html += '<ul>';
+            files.forEach(file => {
+                html += `<li class="file-item" data-path="${file.path}">`;
+                html += `<a href="/view?file=${encodeURIComponent(file.path)}">${file.fileName}</a>`;
+                html += '</li>';
+            });
+            html += '</ul>';
+            html += '</div>';
+        });
+
+        return html;
+    }
+}
+
 // Function to find an available port
 function findAvailablePort(startPort = 8080, maxAttempts = 10) {
     return new Promise((resolve, reject) => {
@@ -309,8 +872,8 @@ async function startFolderServer(folderPath) {
                 return;
             }
 
-            const indexMarkdown = generateFolderIndex(baseDir, mdFiles, port);
-            const indexHtml = generateHtmlFromMarkdown(indexMarkdown, `Index of ${path.basename(baseDir) || 'Directory'}`, true, true, selectedTheme);
+            // Generate custom HTML for index with search functionality
+            const indexHtml = generateIndexHtmlWithSearch(baseDir, mdFiles, port, selectedTheme);
 
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(indexHtml);
