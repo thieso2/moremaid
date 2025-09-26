@@ -5,8 +5,15 @@ const path = require('path');
 const { exec } = require('child_process');
 const http = require('http');
 const url = require('url');
+const readline = require('readline');
+const os = require('os');
 const { marked } = require('marked');
 const MiniSearch = require('minisearch');
+const archiver = require('archiver');
+const archiverZipEncrypted = require('archiver-zip-encrypted');
+const unzipper = require('unzipper');
+const { BlobReader, BlobWriter, ZipReader, TextWriter } = require('@zip.js/zip.js');
+const WebSocket = require('ws');
 const packageJson = require('./package.json');
 
 // Parse command line arguments
@@ -14,6 +21,9 @@ const args = process.argv.slice(2);
 
 // Check for dark mode flag (legacy support)
 const darkMode = args.includes('--dark') || args.includes('-d');
+
+// Check for pack flag
+const packMode = args.includes('--pack') || args.includes('-p');
 
 // Check for theme flag
 let selectedTheme = null;
@@ -48,6 +58,8 @@ Options:
                       light, dark, github, github-dark, dracula,
                       nord, solarized-light, solarized-dark,
                       monokai, one-dark
+  -p, --pack          Pack all markdown files into a .moremaid file
+                      (prompts for optional password)
 
 Examples:
   mm README.md              View a markdown file
@@ -55,6 +67,8 @@ Examples:
   mm ~/notes/meeting.md     View a file with absolute path
   mm .                      View all markdown files in current directory (starts server)
   mm docs                   View all markdown files in docs folder (starts server)
+  mm --pack .               Pack all markdown files (prompts for password)
+  mm --pack docs            Pack all markdown files in docs folder
 
 Features:
   • Renders Mermaid diagrams (flowcharts, sequence diagrams, etc.)
@@ -94,9 +108,15 @@ if (!fs.existsSync(inputPath)) {
 // Determine if it's a file or directory
 const stats = fs.statSync(inputPath);
 
-if (stats.isDirectory()) {
+if (packMode) {
+    // Handle pack mode - create zip file
+    packMarkdownFiles(inputPath, stats.isDirectory());
+} else if (stats.isDirectory()) {
     // Handle directory mode - start HTTP server
     startFolderServer(inputPath);
+} else if (inputPath.match(/\.(zip|moremaid)$/i)) {
+    // Handle zip file - extract and serve
+    handleZipFile(inputPath);
 } else {
     // Handle single file mode
     handleSingleFile(inputPath);
@@ -156,6 +176,145 @@ function handleSingleFile(filePath) {
     });
 }
 
+// Function to handle zip file extraction and serving
+async function handleZipFile(zipPath) {
+    console.log(`📊 Moremaid v${packageJson.version}`);
+    console.log(`📦 Opening zip file: ${path.basename(zipPath)}`);
+
+    // Create a temporary directory for extraction
+    const tempDir = path.join(os.tmpdir(), `mm-extract-${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    // Track if cleanup is done to avoid double cleanup
+    let cleanupDone = false;
+
+    // Cleanup function
+    const cleanup = () => {
+        if (cleanupDone) return;
+        cleanupDone = true;
+
+        console.log('\n🧹 Cleaning up temporary files...');
+        try {
+            // Remove the temporary directory recursively
+            fs.rmSync(tempDir, { recursive: true, force: true });
+            console.log('✅ Cleanup complete');
+        } catch (e) {
+            console.error('⚠️  Error during cleanup:', e.message);
+        }
+        process.exit(0);
+    };
+
+    // Register cleanup handlers
+    process.on('SIGINT', cleanup);  // Ctrl+C
+    process.on('SIGTERM', cleanup); // Kill signal
+    process.on('exit', cleanup);    // Normal exit
+
+    try {
+        // Use zip.js for extraction (supports AES-256)
+        const zipFileBuffer = fs.readFileSync(zipPath);
+        const zipBlob = new Blob([zipFileBuffer]);
+        const zipReader = new ZipReader(new BlobReader(zipBlob));
+
+        let entries;
+        let password = null;
+
+        // Try to get entries without password first
+        try {
+            entries = await zipReader.getEntries();
+            // Check if any entry is encrypted
+            const hasEncrypted = entries.some(entry => entry.encrypted);
+
+            if (hasEncrypted) {
+                // Need password - prompt for it
+                password = await promptPassword('Enter password for zip file: ');
+                // Close and reopen with password
+                await zipReader.close();
+                const newZipReader = new ZipReader(new BlobReader(zipBlob), { password });
+                entries = await newZipReader.getEntries();
+            }
+        } catch (err) {
+            if (err.message && (err.message.includes('password') || err.message.includes('encrypted'))) {
+                // Need password - prompt for it
+                password = await promptPassword('Enter password for zip file: ');
+                // Try again with password
+                await zipReader.close();
+                const newZipReader = new ZipReader(new BlobReader(zipBlob), { password });
+                try {
+                    entries = await newZipReader.getEntries();
+                } catch (err2) {
+                    console.error('❌ Incorrect password or corrupted file');
+                    cleanup();
+                    return;
+                }
+            } else {
+                throw err;
+            }
+        }
+
+        // Extract all entries
+        for (const entry of entries) {
+            if (!entry.directory) {
+                const outputPath = path.join(tempDir, entry.filename);
+
+                // Create directory if needed
+                fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+                // Get file content
+                const writer = new BlobWriter();
+                const content = await entry.getData(writer, { password });
+                const buffer = Buffer.from(await content.arrayBuffer());
+
+                // Write to file
+                fs.writeFileSync(outputPath, buffer);
+            }
+        }
+
+        await zipReader.close();
+
+        console.log('✅ Extraction complete');
+
+        // Get statistics instead of listing files
+        const extractedFiles = fs.readdirSync(tempDir);
+        let totalSize = 0;
+        extractedFiles.forEach(file => {
+            const stats = fs.statSync(path.join(tempDir, file));
+            if (stats.isFile()) {
+                totalSize += stats.size;
+            }
+        });
+
+        // Find markdown files in the extracted directory
+        const mdFiles = findMarkdownFiles(tempDir);
+
+        if (mdFiles.length === 0) {
+            console.error('❌ No markdown files found in the zip archive');
+            cleanup();
+            return;
+        }
+
+        // Show extraction statistics
+        const sizeKB = (totalSize / 1024).toFixed(1);
+        console.log(`📊 Extracted ${extractedFiles.length} file(s), ${sizeKB} KB total`);
+        console.log(`📄 Found ${mdFiles.length} markdown file(s)`);
+
+        // Start the server with the temporary directory
+        const server = await startFolderServer(tempDir, true);
+
+        // Override server close to trigger cleanup
+        const originalClose = server.close.bind(server);
+        server.close = (callback) => {
+            originalClose(() => {
+                cleanup();
+                if (callback) callback();
+            });
+        };
+
+    } catch (error) {
+        console.error('❌ Error extracting zip file:', error.message);
+        cleanup();
+    }
+}
+
 // Function to recursively find markdown files
 function findMarkdownFiles(dir, baseDir = dir) {
     let files = [];
@@ -176,6 +335,191 @@ function findMarkdownFiles(dir, baseDir = dir) {
     }
 
     return files.sort();
+}
+
+// Function to prompt for password with hidden input
+function promptPassword(query) {
+    return new Promise((resolve, reject) => {
+        const input = process.stdin;
+        const output = process.stdout;
+
+        // For non-TTY (piped input), read normally
+        if (!output.isTTY || !input.isTTY) {
+            const rl = readline.createInterface({ input, output });
+            // Write prompt to stderr so it shows even with piped input
+            process.stderr.write(query);
+            rl.question('', (answer) => {
+                rl.close();
+                resolve(answer);
+            });
+            return;
+        }
+
+        // For TTY, hide the input - don't use readline here as it interferes
+        output.write(query);
+
+        // Turn off echo by setting raw mode
+        if (!input.setRawMode) {
+            // Fallback if setRawMode is not available
+            const rl = readline.createInterface({ input, output });
+            rl.question('', (answer) => {
+                rl.close();
+                resolve(answer);
+            });
+            return;
+        }
+
+        input.setRawMode(true);
+
+        // Resume stdin in raw mode without encoding
+        input.resume();
+
+        let password = '';
+
+        const onData = (chunk) => {
+            // Convert buffer to string
+            const char = chunk.toString('utf8');
+            // Handle Enter/Return
+            if (char === '\r' || char === '\n') {
+                output.write('\n');
+                cleanup();
+                resolve(password);
+                return;
+            }
+
+            // Handle Ctrl+C
+            if (char === '\u0003') {
+                cleanup();
+                process.exit(0);
+                return;
+            }
+
+            // Handle Backspace or Delete
+            if (char === '\u0008' || char === '\u007F') {
+                if (password.length > 0) {
+                    password = password.slice(0, -1);
+                    // Erase one asterisk
+                    output.write('\b \b');
+                }
+                return;
+            }
+
+            // Ignore other control characters
+            if (char < ' ' || char > '~') return;
+
+            // Append character (don't show anything for cleaner experience)
+            password += char;
+            // Optionally show asterisk - comment out if double-echoing occurs
+            // output.write('*');
+        };
+
+        const cleanup = () => {
+            input.removeListener('data', onData);
+            input.pause();
+            if (input.setRawMode) {
+                input.setRawMode(false);
+            }
+        };
+
+        input.on('data', onData);
+    });
+}
+
+// Function to pack markdown files into a zip
+async function packMarkdownFiles(inputPath, isDirectory) {
+    const baseDir = isDirectory ? path.resolve(inputPath) : path.dirname(path.resolve(inputPath));
+    const baseName = path.basename(baseDir === '.' ? process.cwd() : baseDir);
+    const outputFile = `${baseName}.moremaid`;
+
+    // Find markdown files
+    let mdFiles = [];
+    if (isDirectory) {
+        mdFiles = findMarkdownFiles(baseDir);
+    } else {
+        // Single file mode
+        if (inputPath.match(/\.(md|markdown)$/i)) {
+            mdFiles = [path.basename(inputPath)];
+        } else {
+            console.error('Error: Input file is not a markdown file');
+            process.exit(1);
+        }
+    }
+
+    if (mdFiles.length === 0) {
+        console.error('No markdown files found in the specified path');
+        process.exit(1);
+    }
+
+    // Prompt for password to avoid command line exposure
+    const finalPassword = await promptPassword('Enter password for zip encryption (optional, press Enter to skip): ');
+
+    // Register the encrypted format if password is provided
+    if (finalPassword) {
+        archiver.registerFormat('zip-encrypted', archiverZipEncrypted);
+    }
+
+    // Create a file to stream archive data to
+    const output = fs.createWriteStream(outputFile);
+    const archive = finalPassword
+        ? archiver.create('zip-encrypted', {
+            zlib: { level: 9 },
+            encryptionMethod: 'aes256',
+            password: finalPassword
+        })
+        : archiver('zip', {
+            zlib: { level: 9 } // Maximum compression
+        });
+
+    // Listen for all archive data to be written
+    output.on('close', () => {
+        const sizeKB = (archive.pointer() / 1024).toFixed(2);
+        console.log(`📦 Created ${outputFile} (${sizeKB} KB)`);
+        console.log(`   Contains ${mdFiles.length} markdown file(s)`);
+        if (finalPassword) {
+            console.log(`   🔒 Password-protected with AES-256 encryption`);
+        }
+    });
+
+    // Good practice to catch warnings
+    archive.on('warning', (err) => {
+        if (err.code === 'ENOENT') {
+            console.warn('Warning:', err);
+        } else {
+            throw err;
+        }
+    });
+
+    // Good practice to catch this error explicitly
+    archive.on('error', (err) => {
+        throw err;
+    });
+
+    // Pipe archive data to the file
+    archive.pipe(output);
+
+    console.log(`📊 Moremaid v${packageJson.version}`);
+    console.log(`📁 Packing markdown files from ${isDirectory ? 'directory' : 'file'}: ${inputPath}`);
+    console.log(`   Found ${mdFiles.length} file(s) to pack`);
+
+    // Add files to the archive
+    mdFiles.forEach(file => {
+        const fullPath = path.join(baseDir, file);
+        archive.file(fullPath, { name: file });
+    });
+
+    // Create a manifest file with metadata
+    const manifest = {
+        version: packageJson.version,
+        created: new Date().toISOString(),
+        source: path.basename(baseDir),
+        files: mdFiles,
+        totalFiles: mdFiles.length
+    };
+
+    archive.append(JSON.stringify(manifest, null, 2), { name: 'moremaid.manifest.json' });
+
+    // Finalize the archive
+    archive.finalize();
 }
 
 // Function to generate folder index markdown
@@ -1268,8 +1612,29 @@ function findAvailablePort(startPort = 8080, maxAttempts = 10) {
 }
 
 // Function to start HTTP server for folder mode
-async function startFolderServer(folderPath) {
+async function startFolderServer(folderPath, isTemp = false) {
     const baseDir = path.resolve(folderPath);
+
+    // Track active WebSocket connections for cleanup
+    let activeConnections = new Set();
+    let inactivityTimer = null;
+
+    // For temp directories, auto-cleanup after no connections
+    const INACTIVITY_TIMEOUT = isTemp ? 10000 : 0; // 10 seconds after last connection closes
+
+    const checkForCleanup = () => {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+
+        if (isTemp && activeConnections.size === 0) {
+            console.log('🔌 All connections closed');
+            inactivityTimer = setTimeout(() => {
+                console.log('⏰ No connections for 10 seconds, shutting down...');
+                if (wss) wss.close();
+                server.close();
+                process.exit(0);
+            }, INACTIVITY_TIMEOUT);
+        }
+    };
 
     // Try to find an available port
     let port;
@@ -1336,7 +1701,50 @@ async function startFolderServer(folderPath) {
             }
 
             // Generate custom HTML for index with search functionality
-            const indexHtml = generateIndexHtmlWithSearch(baseDir, mdFiles, port, selectedTheme);
+            let indexHtml = generateIndexHtmlWithSearch(baseDir, mdFiles, port, selectedTheme);
+
+            // Inject WebSocket client code for temp mode
+            if (isTemp) {
+                const wsClientCode = `
+<script>
+(function() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(protocol + '//' + window.location.host);
+
+    ws.onopen = function() {
+        console.log('Connected to server for cleanup tracking');
+    };
+
+    ws.onclose = function() {
+        console.log('Disconnected from server');
+    };
+
+    ws.onerror = function(error) {
+        console.log('WebSocket error:', error);
+    };
+
+    // Respond to ping with pong
+    ws.onmessage = function(event) {
+        if (event.data === 'ping') {
+            ws.send('pong');
+        }
+    };
+
+    // Keep connection alive
+    setInterval(function() {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send('heartbeat');
+        }
+    }, 30000);
+})();
+</script>
+`;
+                // Only replace the last </body> tag, not ones inside JavaScript strings
+                const lastBodyIndex = indexHtml.lastIndexOf('</body>');
+                if (lastBodyIndex !== -1) {
+                    indexHtml = indexHtml.slice(0, lastBodyIndex) + wsClientCode + indexHtml.slice(lastBodyIndex);
+                }
+            }
 
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(indexHtml);
@@ -1367,7 +1775,50 @@ async function startFolderServer(folderPath) {
 
             try {
                 const markdown = fs.readFileSync(filePath, 'utf-8');
-                const html = generateHtmlFromMarkdown(markdown, path.basename(filePath), false, true, selectedTheme);
+                let html = generateHtmlFromMarkdown(markdown, path.basename(filePath), false, true, selectedTheme);
+
+                // Inject WebSocket client code for temp mode
+                if (isTemp) {
+                    const wsClientCode = `
+<script>
+(function() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(protocol + '//' + window.location.host);
+
+    ws.onopen = function() {
+        console.log('Connected to server for cleanup tracking');
+    };
+
+    ws.onclose = function() {
+        console.log('Disconnected from server');
+    };
+
+    ws.onerror = function(error) {
+        console.log('WebSocket error:', error);
+    };
+
+    // Respond to ping with pong
+    ws.onmessage = function(event) {
+        if (event.data === 'ping') {
+            ws.send('pong');
+        }
+    };
+
+    // Keep connection alive
+    setInterval(function() {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send('heartbeat');
+        }
+    }, 30000);
+})();
+</script>
+`;
+                    // Only replace the last </body> tag, not ones inside JavaScript strings
+                    const lastBodyIndex = html.lastIndexOf('</body>');
+                    if (lastBodyIndex !== -1) {
+                        html = html.slice(0, lastBodyIndex) + wsClientCode + html.slice(lastBodyIndex);
+                    }
+                }
 
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end(html);
@@ -1526,9 +1977,54 @@ async function startFolderServer(folderPath) {
         }
     });
 
+    // Create WebSocket server for connection tracking
+    let wss = null;
+    if (isTemp) {
+        wss = new WebSocket.Server({ server });
+
+        wss.on('connection', (ws) => {
+            const clientId = Date.now() + Math.random();
+            activeConnections.add(clientId);
+            console.log(`🔗 Browser connected (${activeConnections.size} active connection${activeConnections.size !== 1 ? 's' : ''})`);
+
+            // Clear any pending cleanup timer
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+                inactivityTimer = null;
+            }
+
+            ws.on('close', () => {
+                activeConnections.delete(clientId);
+                console.log(`🔌 Browser disconnected (${activeConnections.size} active connection${activeConnections.size !== 1 ? 's' : ''})`);
+                checkForCleanup();
+            });
+
+            ws.on('error', () => {
+                activeConnections.delete(clientId);
+                checkForCleanup();
+            });
+
+            // Send ping every 30 seconds to keep connection alive
+            const pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.ping();
+                } else {
+                    clearInterval(pingInterval);
+                }
+            }, 30000);
+
+            ws.on('close', () => {
+                clearInterval(pingInterval);
+            });
+        });
+    }
+
     server.listen(port, () => {
         console.log(`🚀 Moremaid v${packageJson.version} server running at http://localhost:${port}`);
-        console.log(`📁 Serving markdown files from: ${baseDir}`);
+        console.log(`📁 Serving ${isTemp ? 'extracted' : 'markdown'} files from: ${isTemp ? 'temporary directory' : baseDir}`);
+        if (isTemp) {
+            console.log('🔌 Auto-cleanup enabled when browser closes');
+        }
         console.log('Press Ctrl+C to stop the server');
 
         // Open browser
@@ -1543,23 +2039,27 @@ async function startFolderServer(folderPath) {
         process.exit(1);
     });
 
-    // Handle graceful shutdown
-    let isShuttingDown = false;
-    process.on('SIGINT', () => {
-        if (isShuttingDown) {
-            // Force immediate exit on second Ctrl+C
-            process.exit(0);
-        }
-        isShuttingDown = true;
-        console.log('\n👋 Stopping server...');
-        server.close(() => {
-            process.exit(0);
+    // Handle graceful shutdown (only for non-temp servers)
+    if (!isTemp) {
+        let isShuttingDown = false;
+        process.on('SIGINT', () => {
+            if (isShuttingDown) {
+                // Force immediate exit on second Ctrl+C
+                process.exit(0);
+            }
+            isShuttingDown = true;
+            console.log('\n👋 Stopping server...');
+            server.close(() => {
+                process.exit(0);
+            });
+            // Force exit after 1 second if server doesn't close
+            setTimeout(() => {
+                process.exit(0);
+            }, 1000);
         });
-        // Force exit after 1 second if server doesn't close
-        setTimeout(() => {
-            process.exit(0);
-        }, 1000);
-    });
+    }
+
+    return server;
 }
 
 // Function to generate HTML from markdown

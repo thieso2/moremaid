@@ -41,8 +41,13 @@
   },
   "homepage": "https://github.com/thieso2/moremaid#readme",
   "dependencies": {
+    "@zip.js/zip.js": "^2.8.2",
+    "archiver": "^7.0.1",
+    "archiver-zip-encrypted": "^2.0.0",
     "marked": "^12.0.0",
-    "minisearch": "^7.2.0"
+    "minisearch": "^7.2.0",
+    "unzipper": "^0.12.3",
+    "ws": "^8.18.3"
   },
   "engines": {
     "node": ">=14.0.0"
