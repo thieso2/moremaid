@@ -9,12 +9,14 @@ A powerful Markdown viewer with full Mermaid diagram support. View your markdown
 - 🎭 **10 Color Themes** - Choose from Light, Dark, GitHub, Dracula, Nord, Solarized, Monokai, and more
 - 🌙 **Smart Theme UI** - Theme selector appears on hover in top-right corner
 - 📁 **Folder Mode** - Browse entire directories of markdown files with built-in HTTP server
+- 📦 **Archive Support** - Pack and share markdown projects as `.moremaid` files with optional encryption
 - 🔍 **Full-Text Search** - Search within file contents with context snippets and highlighting
 - ⌨️ **Keyboard Navigation** - Use TAB to toggle search modes, arrow keys to navigate results
 - 🎯 **Smart Search** - Fuzzy matching, prefix search, and relevance ranking
 - 📱 **Responsive Design** - Clean, readable layout that works on any screen size
 - 🔗 **Bookmarkable URLs** - Direct links to specific files (server mode)
 - 🖼️ **Fullscreen Diagrams** - Click to open Mermaid diagrams in a new window
+- 🧹 **Auto-Cleanup** - Temporary files cleaned up automatically when viewing archives
 - 🚀 **Zero Config** - Works out of the box with sensible defaults
 
 ## Installation
@@ -57,9 +59,30 @@ mm file.md -t dracula
 mm file.md --dark              # Shortcut for --theme dark
 ```
 
+### Archive Mode (.moremaid Files)
+
+Pack and share your markdown projects:
+
+```bash
+# Pack a directory into a .moremaid archive
+mm --pack myproject/
+mm --pack README.md            # Pack a single file
+mm --pack docs/ --theme github # Pack with default theme
+
+# View a .moremaid archive
+mm project.moremaid             # Opens archive in browser
+mm shared.zip                   # Also supports regular .zip files
+```
+
+Archive features:
+- **Password Protection** - Optional AES-256 encryption for sensitive documents
+- **Self-Contained** - All markdown files packed into a single shareable file
+- **Auto-Cleanup** - Server automatically shuts down when browser closes
+- **Instant Navigation** - Single WebSocket connection for all files
+
 Available command-line options:
 ```bash
-mm [options] <markdown-file-or-folder>
+mm [options] <markdown-file-or-folder-or-archive>
 
 Options:
   -h, --help          Show help message
@@ -69,6 +92,7 @@ Options:
                       light, dark, github, github-dark, dracula,
                       nord, solarized-light, solarized-dark,
                       monokai, one-dark
+  -p, --pack          Pack files into .moremaid archive
 ```
 
 The tool:

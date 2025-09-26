@@ -1,7 +1,7 @@
 {
   "name": "moremaid",
   "version": "1.3.3",
-  "description": "Powerful Markdown viewer with Mermaid diagrams, full-text search, syntax highlighting, and 10+ themes. Browse folders with built-in server and search within file contents.",
+  "description": "Powerful Markdown viewer with Mermaid diagrams, archive support, and 10+ themes. Pack and share markdown projects as .moremaid files with encryption. Features full-text search, syntax highlighting, and auto-cleanup.",
   "main": "mm.js",
   "bin": {
     "mm": "mm.js",
@@ -28,7 +28,12 @@
     "markdown-browser",
     "code-highlighting",
     "prism",
-    "marked"
+    "marked",
+    "archive",
+    "pack",
+    "encryption",
+    "moremaid",
+    "auto-cleanup"
   ],
   "author": "thieso2",
   "license": "MIT",
@@ -54,6 +59,7 @@
   },
   "files": [
     "mm.js",
+    "lib/",
     "README.md",
     "LICENSE"
   ]
