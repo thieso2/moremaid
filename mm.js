@@ -561,7 +561,7 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         }
     </style>
 </head>
-<body>
+<body data-typography="default">
     <div class="search-container">
         <input
             type="text"
@@ -1176,7 +1176,7 @@ async function startFolderServer(folderPath) {
         }
     </style>
 </head>
-<body>
+<body data-typography="default">
     <div class="container">
         <h1>📂 No Markdown Files Found</h1>
         <p>No .md or .markdown files were found in:</p>
@@ -1338,7 +1338,7 @@ async function startFolderServer(folderPath) {
         }
     </style>
 </head>
-<body>
+<body data-typography="default">
     <div class="container">
         <h1>404 - Page Not Found</h1>
         <p>The requested path "${pathname}" was not found.</p>
@@ -1937,7 +1937,7 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
         }
     </style>
 </head>
-<body>
+<body data-typography="default">
     <div class="controls-trigger"></div>
     <div class="controls">
         <div class="zoom-control">
