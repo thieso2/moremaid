@@ -4,8 +4,8 @@
   "description": "Powerful Markdown viewer with Mermaid diagrams, full-text search, syntax highlighting, and 10+ themes. Browse folders with built-in server and search within file contents.",
   "main": "mm.js",
   "bin": {
-    "mm": "./mm.js",
-    "moremaid": "./mm.js"
+    "mm": "mm.js",
+    "moremaid": "mm.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
