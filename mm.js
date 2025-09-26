@@ -211,22 +211,15 @@ function generateFolderIndex(folderPath, files, port = 8080) {
 function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null) {
     const folderName = path.basename(folderPath) || 'Directory';
 
-    // Prepare file data with content for full-text search
+    // Prepare file data WITHOUT content for initial load
+    // Content will be loaded via API to avoid script injection issues
     const fileData = files.map((file, index) => {
-        const fullPath = path.join(folderPath, file);
-        let content = '';
-        try {
-            content = fs.readFileSync(fullPath, 'utf-8');
-        } catch (err) {
-            console.error(`Error reading ${file}:`, err.message);
-        }
-
         return {
             id: index,
             path: file,
             fileName: path.basename(file),
-            directory: path.dirname(file) === '.' ? '' : path.dirname(file),
-            content: content
+            directory: path.dirname(file) === '.' ? '' : path.dirname(file)
+            // Content removed - will be loaded via /api/files endpoint
         };
     });
 
@@ -454,9 +447,8 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             <div class="search-mode-toggle">
                 <label>
                     <input type="checkbox" id="contentSearchToggle" />
-                    <span>Search in file contents</span>
+                    <span>Search in file contents (TAB to toggle)</span>
                 </label>
-                <span style="color: var(--file-info-color); font-size: 12px;">(Press TAB in search field to toggle)</span>
             </div>
             <input
                 type="text"
@@ -485,10 +477,10 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         // File data
         const allFiles = ${JSON.stringify(fileData)};
 
-        // Initialize MiniSearch for content search
+        // Initialize MiniSearch for filename search only
         const contentIndex = new MiniSearch({
-            fields: ['fileName', 'content'],
-            storeFields: ['path', 'fileName', 'directory', 'content'],
+            fields: ['fileName', 'path'],
+            storeFields: ['path', 'fileName', 'directory'],
             searchOptions: {
                 boost: { fileName: 2 },
                 fuzzy: 0.2,
@@ -504,7 +496,6 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         const searchSuggestions = document.getElementById('searchSuggestions');
         const searchShortcut = document.getElementById('searchShortcut');
         const fileList = document.getElementById('fileList');
-        const contentSearchToggle = document.getElementById('contentSearchToggle');
         let selectedIndex = -1;
 
         // Highlight matching text
@@ -527,98 +518,61 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             return result;
         }
 
-        // Extract snippet with context around matches
+        // Extract snippet - disabled since content search is removed
         function extractSnippet(text, query, maxLength = 150) {
-            if (!text || !query) return '';
-
-            const lowerText = text.toLowerCase();
-            const lowerQuery = query.toLowerCase();
-            const index = lowerText.indexOf(lowerQuery);
-
-            if (index === -1) return '';
-
-            // Calculate context window
-            const contextBefore = 50;
-            const contextAfter = 100;
-
-            let start = Math.max(0, index - contextBefore);
-            let end = Math.min(text.length, index + query.length + contextAfter);
-
-            // Adjust to word boundaries
-            if (start > 0) {
-                const spaceIndex = text.lastIndexOf(' ', start);
-                if (spaceIndex > start - 20) start = spaceIndex + 1;
-            }
-
-            if (end < text.length) {
-                const spaceIndex = text.indexOf(' ', end);
-                if (spaceIndex !== -1 && spaceIndex < end + 20) end = spaceIndex;
-            }
-
-            let snippet = text.slice(start, end);
-
-            // Add ellipsis if needed
-            if (start > 0) snippet = '...' + snippet;
-            if (end < text.length) snippet = snippet + '...';
-
-            // Highlight the match
-            return highlightMatch(snippet, query);
+            return ''; // Content search disabled
         }
 
         // Filter files based on query
-        function filterFiles(query) {
+        async function filterFiles(query) {
             if (!query) return allFiles;
 
-            const isContentSearch = contentSearchToggle.checked;
+            const contentSearchToggle = document.getElementById('contentSearchToggle');
+            const searchInContent = contentSearchToggle && contentSearchToggle.checked;
 
-            if (isContentSearch) {
-                // Use MiniSearch for content search
-                const results = contentIndex.search(query);
-
-                // Map search results back to file data with snippets
-                return results.map(result => {
-                    const file = allFiles.find(f => f.id === result.id);
-                    if (!file) return null;
-
-                    // Add match info and snippet
-                    return {
-                        ...file,
-                        score: result.score,
-                        snippet: extractSnippet(file.content, query),
-                        matchCount: (file.content.toLowerCase().match(new RegExp(query.toLowerCase(), 'g')) || []).length
-                    };
-                }).filter(Boolean);
-            } else {
-                // Original filename search
-                const lowerQuery = query.toLowerCase();
-                return allFiles.filter(file => {
-                    const fullPath = file.directory ? file.directory + '/' + file.fileName : file.fileName;
-                    return fullPath.toLowerCase().includes(lowerQuery);
-                }).sort((a, b) => {
-                    // Sort by relevance (filename matches first, then path matches)
-                    const aFileName = a.fileName.toLowerCase();
-                    const bFileName = b.fileName.toLowerCase();
-                    const aPath = (a.directory + '/' + a.fileName).toLowerCase();
-                    const bPath = (b.directory + '/' + b.fileName).toLowerCase();
-
-                    const aFileMatch = aFileName.includes(lowerQuery);
-                    const bFileMatch = bFileName.includes(lowerQuery);
-
-                    if (aFileMatch && !bFileMatch) return -1;
-                    if (!aFileMatch && bFileMatch) return 1;
-
-                    // If both match in filename or both don't, sort by position
-                    const aIndex = aFileMatch ? aFileName.indexOf(lowerQuery) : aPath.indexOf(lowerQuery);
-                    const bIndex = bFileMatch ? bFileName.indexOf(lowerQuery) : bPath.indexOf(lowerQuery);
-
-                    return aIndex - bIndex;
-                });
+            if (searchInContent) {
+                // Use API for content search
+                try {
+                    const response = await fetch('/api/search?q=' + encodeURIComponent(query) + '&mode=content');
+                    if (response.ok) {
+                        const results = await response.json();
+                        return results;
+                    }
+                } catch (error) {
+                    console.error('Content search failed:', error);
+                    // Fall back to filename search
+                }
             }
+
+            // Filename search (local)
+            const lowerQuery = query.toLowerCase();
+            return allFiles.filter(file => {
+                const fullPath = file.directory ? file.directory + '/' + file.fileName : file.fileName;
+                return fullPath.toLowerCase().includes(lowerQuery);
+            }).sort((a, b) => {
+                // Sort by relevance (filename matches first, then path matches)
+                const aFileName = a.fileName.toLowerCase();
+                const bFileName = b.fileName.toLowerCase();
+                const aPath = (a.directory + '/' + a.fileName).toLowerCase();
+                const bPath = (b.directory + '/' + b.fileName).toLowerCase();
+
+                const aFileMatch = aFileName.includes(lowerQuery);
+                const bFileMatch = bFileName.includes(lowerQuery);
+
+                if (aFileMatch && !bFileMatch) return -1;
+                if (!aFileMatch && bFileMatch) return 1;
+
+                // If both match in filename or both don't, sort by position
+                const aIndex = aFileMatch ? aFileName.indexOf(lowerQuery) : aPath.indexOf(lowerQuery);
+                const bIndex = bFileMatch ? bFileName.indexOf(lowerQuery) : bPath.indexOf(lowerQuery);
+
+                return aIndex - bIndex;
+            });
         }
 
         // Update suggestions
-        function updateSuggestions(query) {
-            const filteredFiles = filterFiles(query);
+        async function updateSuggestions(query) {
+            const filteredFiles = await filterFiles(query);
             selectedIndex = -1;
 
             if (!query) {
@@ -653,25 +607,26 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             }
 
             // Show suggestions
-            const isContentSearch = contentSearchToggle.checked;
             const html = filteredFiles.slice(0, 10).map((file, index) => {
                 const fullPath = file.directory ? file.directory + '/' + file.fileName : file.fileName;
-                const highlightedFileName = isContentSearch ? file.fileName : highlightMatch(file.fileName, query);
-                const highlightedPath = file.directory ? (isContentSearch ? file.directory : highlightMatch(file.directory, query)) : '';
+                const highlightedFileName = highlightMatch(file.fileName, query);
+                const highlightedPath = file.directory ? highlightMatch(file.directory, query) : '';
 
-                let itemHtml = \`<div class="suggestion-item" data-index="\${index}" data-path="\${file.path}">
-                    <div class="file-name">
-                        \${highlightedFileName}
-                        \${isContentSearch && file.matchCount ? \`<span class="match-count">\${file.matchCount} match\${file.matchCount > 1 ? 'es' : ''}</span>\` : ''}
-                    </div>
-                    \${file.directory ? \`<div class="file-path">\${highlightedPath}/</div>\` : ''}\`;
+                let itemHtml = '<div class="suggestion-item" data-index="' + index + '" data-path="' + file.path + '">' +
+                    '<div class="file-name">' +
+                        highlightedFileName +
+                    '</div>' +
+                    (file.directory ? '<div class="file-path">' + highlightedPath + '/</div>' : '');
 
-                // Add content snippet if in content search mode
-                if (isContentSearch && file.snippet) {
-                    itemHtml += \`<div class="content-snippet">\${file.snippet}</div>\`;
+                // Add content matches if available
+                if (file.matches && file.matches.length > 0) {
+                    const match = file.matches[0];
+                    itemHtml += '<div class="content-snippet">' +
+                        'Line ' + match.lineNumber + ': ' + highlightMatch(match.text, query) +
+                        '</div>';
                 }
 
-                itemHtml += \`</div>\`;
+                itemHtml += '</div>';
                 return itemHtml;
             }).join('');
 
@@ -708,9 +663,9 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                 const visibleCount = count !== null ? count : group.querySelectorAll('.file-item:not(.hidden)').length;
                 const totalCount = group.querySelectorAll('.file-item').length;
                 if (searchField.value && visibleCount < totalCount) {
-                    countEl.textContent = \`(\${visibleCount}/\${totalCount})\`;
+                    countEl.textContent = '(' + visibleCount + '/' + totalCount + ')';
                 } else {
-                    countEl.textContent = \`(\${totalCount})\`;
+                    countEl.textContent = '(' + totalCount + ')';
                 }
             }
         }
@@ -728,14 +683,7 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         searchField.addEventListener('keydown', (e) => {
             const items = searchSuggestions.querySelectorAll('.suggestion-item');
 
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                // Toggle search mode
-                contentSearchToggle.checked = !contentSearchToggle.checked;
-                contentSearchToggle.dispatchEvent(new Event('change'));
-                // Keep focus on search field
-                searchField.focus();
-            } else if (e.key === 'ArrowDown') {
+            if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
                 updateSelectedItem(items);
@@ -751,6 +699,16 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                 searchField.value = '';
                 updateSuggestions('');
                 searchField.blur();
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                const contentSearchToggle = document.getElementById('contentSearchToggle');
+                if (contentSearchToggle) {
+                    contentSearchToggle.checked = !contentSearchToggle.checked;
+                    // Re-run search with new mode
+                    if (searchField.value) {
+                        updateSuggestions(searchField.value);
+                    }
+                }
             }
         });
 
@@ -788,18 +746,15 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             }, 200);
         });
 
-        // Handle content search toggle
-        contentSearchToggle.addEventListener('change', () => {
-            const isContentSearch = contentSearchToggle.checked;
-            searchField.placeholder = isContentSearch
-                ? 'Search in contents of ' + allFiles.length + ' files... (Press "/" to focus)'
-                : 'Search ' + allFiles.length + ' markdown files... (Press "/" to focus)';
-
-            // Clear and re-trigger search if there's a query
-            if (searchField.value) {
-                updateSuggestions(searchField.value);
-            }
-        });
+        // Content search toggle handler
+        const contentSearchToggle = document.getElementById('contentSearchToggle');
+        if (contentSearchToggle) {
+            contentSearchToggle.addEventListener('change', () => {
+                if (searchField.value) {
+                    updateSuggestions(searchField.value);
+                }
+            });
+        }
 
         // Global keyboard shortcut
         document.addEventListener('keydown', (e) => {
@@ -1092,6 +1047,71 @@ async function startFolderServer(folderPath) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(`<h1>Error reading file: ${error.message}</h1>`);
             }
+
+        } else if (pathname === '/api/search') {
+            // Handle content search requests
+            const query = parsedUrl.query.q;
+            const searchMode = parsedUrl.query.mode || 'filename'; // 'filename' or 'content'
+
+            if (!query) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'No search query provided' }));
+                return;
+            }
+
+            const mdFiles = findMarkdownFiles(baseDir);
+            const results = [];
+
+            if (searchMode === 'content') {
+                // Search file contents
+                for (const file of mdFiles) {
+                    const filePath = path.join(baseDir, file);
+                    try {
+                        const content = fs.readFileSync(filePath, 'utf-8');
+                        const lines = content.split('\n');
+                        const matches = [];
+
+                        // Find matching lines
+                        lines.forEach((line, index) => {
+                            if (line.toLowerCase().includes(query.toLowerCase())) {
+                                matches.push({
+                                    lineNumber: index + 1,
+                                    text: line.trim().substring(0, 200) // Limit line length
+                                });
+                            }
+                        });
+
+                        if (matches.length > 0) {
+                            results.push({
+                                path: file,
+                                fileName: path.basename(file),
+                                directory: path.dirname(file) === '.' ? '' : path.dirname(file),
+                                matches: matches.slice(0, 5) // Limit to first 5 matches
+                            });
+                        }
+                    } catch (error) {
+                        // Skip files that can't be read
+                        console.error(`Error reading ${file}:`, error.message);
+                    }
+                }
+            } else {
+                // Search filenames (fallback)
+                for (const file of mdFiles) {
+                    if (file.toLowerCase().includes(query.toLowerCase())) {
+                        results.push({
+                            path: file,
+                            fileName: path.basename(file),
+                            directory: path.dirname(file) === '.' ? '' : path.dirname(file)
+                        });
+                    }
+                }
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            });
+            res.end(JSON.stringify(results));
 
         } else if (pathname === '/favicon.ico') {
             // Handle favicon requests gracefully
