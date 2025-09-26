@@ -2,7 +2,9 @@
 
 A powerful Markdown viewer with full Mermaid diagram support. View your markdown files with beautifully rendered diagrams, syntax-highlighted code blocks, and a clean reading experience.
 
-https://github.com/user-attachments/assets/demo.mp4
+<video src="demo.mp4" width="100%" controls>
+  Your browser does not support the video tag.
+</video>
 
 ## Features
 
