@@ -217,7 +217,7 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
     // Prepare file data WITHOUT content for initial load
     // Content will be loaded via API to avoid script injection issues
     const fileData = files.map((file, index) => {
-        const fullPath = path.join(dir, file);
+        const fullPath = path.join(folderPath, file);
         const stats = fs.statSync(fullPath);
 
         // Format file size in human readable format
