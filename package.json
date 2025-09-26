@@ -1,7 +1,7 @@
 {
   "name": "moremaid",
   "version": "1.3.1",
-  "description": "A command-line tool to view Markdown files with Mermaid diagram support",
+  "description": "Powerful Markdown viewer with Mermaid diagrams, full-text search, syntax highlighting, and 10+ themes. Browse folders with built-in server and search within file contents.",
   "main": "mm.js",
   "bin": {
     "mm": "./mm.js",
@@ -19,7 +19,16 @@
     "converter",
     "markdown-viewer",
     "mermaid-diagrams",
-    "documentation"
+    "documentation",
+    "full-text-search",
+    "search",
+    "syntax-highlighting",
+    "themes",
+    "markdown-server",
+    "markdown-browser",
+    "code-highlighting",
+    "prism",
+    "marked"
   ],
   "author": "thieso2",
   "license": "MIT",

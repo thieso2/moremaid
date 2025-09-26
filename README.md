@@ -9,7 +9,9 @@ A powerful Markdown viewer with full Mermaid diagram support. View your markdown
 - 🎭 **10 Color Themes** - Choose from Light, Dark, GitHub, Dracula, Nord, Solarized, Monokai, and more
 - 🌙 **Smart Theme UI** - Theme selector appears on hover in top-right corner
 - 📁 **Folder Mode** - Browse entire directories of markdown files with built-in HTTP server
-- 🔍 **Smart Port Selection** - Automatically finds available port when default is busy
+- 🔍 **Full-Text Search** - Search within file contents with context snippets and highlighting
+- ⌨️ **Keyboard Navigation** - Use TAB to toggle search modes, arrow keys to navigate results
+- 🎯 **Smart Search** - Fuzzy matching, prefix search, and relevance ranking
 - 📱 **Responsive Design** - Clean, readable layout that works on any screen size
 - 🔗 **Bookmarkable URLs** - Direct links to specific files (server mode)
 - 🖼️ **Fullscreen Diagrams** - Click to open Mermaid diagrams in a new window
@@ -90,9 +92,27 @@ Folder mode features:
 - Starts local HTTP server (automatically finds free port)
 - Recursively finds all markdown files
 - Interactive index page with file navigation
+- **Full-text search** across all markdown files
+- **Context snippets** showing text around matches
+- **Keyboard shortcuts** for efficient navigation
 - Click files to view them with full rendering
 - Back navigation on file pages
 - Graceful shutdown with Ctrl+C
+
+#### Search Features
+
+When in folder mode, you can:
+- **Search filenames** - Default mode, searches in file and folder names
+- **Search contents** - Toggle with checkbox or TAB key to search within files
+- **View snippets** - See context around matches with highlighting
+- **Navigate results** - Use arrow keys to browse, Enter to open
+
+Keyboard shortcuts:
+- `/` - Focus search field
+- `TAB` - Toggle between filename/content search (when focused)
+- `↑↓` - Navigate search results
+- `Enter` - Open selected file
+- `ESC` - Clear search and unfocus
 
 ## Color Themes
 
@@ -251,6 +271,8 @@ MIT License - see LICENSE file for details
 |---------|----------|---------|---------|---------|
 | Mermaid Support | ✅ Full | ✅ Full | ⚠️ Extension | ✅ Full |
 | Color Themes | ✅ 10+ | ✅ 2 | ✅ Many | ✅ Several |
+| Full-Text Search | ✅ Yes | ✅ Limited | ✅ Yes | ✅ Yes |
+| Context Snippets | ✅ Yes | ❌ No | ✅ Yes | ❌ No |
 | Offline Usage | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes |
 | CLI Tool | ✅ Yes | ❌ No | ❌ No | ❌ No |
 | Web Server | ✅ Yes | ❌ N/A | ⚠️ Extension | ❌ No |
