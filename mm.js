@@ -237,6 +237,170 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
     <style>
         ${styles}
 
+        /* Typography Themes */
+        /* Default - balanced style */
+        [data-typography="default"] {
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-code: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
+            --font-size-base: 16px;
+            --line-height: 1.6;
+            --paragraph-spacing: 1em;
+            --max-width: 900px;
+            --text-align: left;
+        }
+
+        /* GitHub - Clean sans-serif style */
+        [data-typography="github"] {
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            --font-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            --font-size-base: 16px;
+            --line-height: 1.5;
+            --paragraph-spacing: 16px;
+            --max-width: 980px;
+            --text-align: left;
+        }
+
+        /* LaTeX - Academic style with Latin Modern fonts */
+        [data-typography="latex"] {
+            --font-body: 'Latin Modern Roman', 'Computer Modern', 'Georgia', serif;
+            --font-heading: 'Latin Modern Roman', 'Computer Modern', 'Georgia', serif;
+            --font-code: 'Latin Modern Mono', 'Computer Modern Typewriter', 'Courier New', monospace;
+            --font-size-base: 12pt;
+            --line-height: 1.4;
+            --paragraph-spacing: 0.5em;
+            --max-width: 6.5in;
+            --text-align: justify;
+        }
+
+        /* Tufte - Edward Tufte's elegant style */
+        [data-typography="tufte"] {
+            --font-body: et-book, Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;
+            --font-heading: et-book, Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;
+            --font-code: Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            --font-size-base: 15px;
+            --line-height: 2;
+            --paragraph-spacing: 1.4rem;
+            --max-width: 1400px;
+            --text-align: left;
+        }
+
+        /* Medium - Blog article style */
+        [data-typography="medium"] {
+            --font-body: charter, Georgia, Cambria, 'Times New Roman', Times, serif;
+            --font-heading: 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Geneva, Arial, sans-serif;
+            --font-code: 'Menlo', 'Monaco', 'Courier New', Courier, monospace;
+            --font-size-base: 21px;
+            --line-height: 1.58;
+            --paragraph-spacing: 1.5em;
+            --max-width: 700px;
+            --text-align: left;
+        }
+
+        /* Compact - Dense layout */
+        [data-typography="compact"] {
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-code: 'Monaco', 'Menlo', monospace;
+            --font-size-base: 14px;
+            --line-height: 1.3;
+            --paragraph-spacing: 0.5em;
+            --max-width: 1200px;
+            --text-align: left;
+        }
+
+        /* Wide - Full width */
+        [data-typography="wide"] {
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-code: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            --font-size-base: 16px;
+            --line-height: 1.6;
+            --paragraph-spacing: 1em;
+            --max-width: 100%;
+            --text-align: left;
+        }
+
+        /* Newspaper - Multi-column layout */
+        [data-typography="newspaper"] {
+            --font-body: 'Times New Roman', Times, serif;
+            --font-heading: 'Georgia', 'Times New Roman', serif;
+            --font-code: 'Courier New', Courier, monospace;
+            --font-size-base: 16px;
+            --line-height: 1.4;
+            --paragraph-spacing: 0.8em;
+            --max-width: 100%;
+            --text-align: justify;
+        }
+
+        /* Terminal - Monospace heavy */
+        [data-typography="terminal"] {
+            --font-body: 'Fira Code', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+            --font-heading: 'Fira Code', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+            --font-code: 'Fira Code', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+            --font-size-base: 14px;
+            --line-height: 1.5;
+            --paragraph-spacing: 1em;
+            --max-width: 1000px;
+            --text-align: left;
+        }
+
+        /* Book - Novel/book style */
+        [data-typography="book"] {
+            --font-body: 'Crimson Text', 'Baskerville', 'Georgia', serif;
+            --font-heading: 'Crimson Text', 'Baskerville', 'Georgia', serif;
+            --font-code: 'Courier New', Courier, monospace;
+            --font-size-base: 18px;
+            --line-height: 1.8;
+            --paragraph-spacing: 0;
+            --max-width: 650px;
+            --text-align: justify;
+        }
+
+        /* Apply typography variables */
+        body {
+            font-family: var(--font-body);
+            font-size: var(--font-size-base);
+            line-height: var(--line-height);
+        }
+
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-heading);
+        }
+
+        p {
+            margin-bottom: var(--paragraph-spacing);
+            text-align: var(--text-align);
+        }
+
+        code, pre {
+            font-family: var(--font-code) !important;
+        }
+
+        /* Book style - indent paragraphs */
+        [data-typography="book"] p + p {
+            text-indent: 2em;
+        }
+
+        /* Newspaper - multi-column for wide screens */
+        @media (min-width: 1200px) {
+            [data-typography="newspaper"] .file-list-flat {
+                column-count: 3;
+                column-gap: 2em;
+                column-rule: 1px solid var(--border-color);
+            }
+
+            [data-typography="newspaper"] .file-item {
+                break-inside: avoid;
+            }
+        }
+
         /* Search field styles */
         .search-container {
             position: fixed;
@@ -428,6 +592,18 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             <option value="solarized-dark">🌃 Solarized Dark</option>
             <option value="monokai">🎨 Monokai</option>
             <option value="one-dark">🌑 One Dark</option>
+        </select>
+        <select id="typographySelector" title="Select typography theme">
+            <option value="default">Default</option>
+            <option value="github">GitHub</option>
+            <option value="latex">LaTeX</option>
+            <option value="tufte">Tufte</option>
+            <option value="medium">Medium</option>
+            <option value="compact">Compact</option>
+            <option value="wide">Wide</option>
+            <option value="newspaper">Newspaper</option>
+            <option value="terminal">Terminal</option>
+            <option value="book">Book</option>
         </select>
     </div>
     <div class="container">
@@ -634,6 +810,13 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
                     item.classList.remove('hidden');
                     // Add highlighting to visible files
                     if (link) {
+                        // Remove any existing match count span
+                        const existingCount = link.querySelector('.match-count');
+                        if (existingCount) {
+                            existingCount.remove();
+                        }
+
+                        // Get the clean text without match count
                         const originalText = link.textContent;
                         link.innerHTML = highlightMatch(originalText, query);
 
@@ -798,6 +981,33 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
         document.getElementById('themeSelector').addEventListener('change', function(e) {
             switchTheme(e.target.value);
         });
+
+        // Typography theme functionality
+        function switchTypography(typography) {
+            document.body.setAttribute('data-typography', typography);
+            localStorage.setItem('preferredTypography', typography);
+        }
+
+        function loadPreferredTypography() {
+            const saved = localStorage.getItem('preferredTypography') || 'default';
+            switchTypography(saved);
+            updateTypographySelector(saved);
+        }
+
+        function updateTypographySelector(typography) {
+            const selector = document.getElementById('typographySelector');
+            if (selector) {
+                selector.value = typography;
+            }
+        }
+
+        // Typography selector change event
+        document.getElementById('typographySelector').addEventListener('change', function(e) {
+            switchTypography(e.target.value);
+        });
+
+        // Load preferred typography on page load
+        loadPreferredTypography();
 
         // Zoom functionality (copy from generateHtmlFromMarkdown)
         let currentZoom = 100;
@@ -1748,6 +1958,18 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
             <option value="monokai">🎨 Monokai</option>
             <option value="one-dark">🌑 One Dark</option>
         </select>
+        <select id="typographySelector" title="Select typography theme">
+            <option value="default">Default</option>
+            <option value="github">GitHub</option>
+            <option value="latex">LaTeX</option>
+            <option value="tufte">Tufte</option>
+            <option value="medium">Medium</option>
+            <option value="compact">Compact</option>
+            <option value="wide">Wide</option>
+            <option value="newspaper">Newspaper</option>
+            <option value="terminal">Terminal</option>
+            <option value="book">Book</option>
+        </select>
     </div>
     <div class="container">
         ${isServer && !isIndex ? '<div class="nav-bar"><a href="#" onclick="history.back(); return false;">← Back to index</a></div>' : ''}
@@ -1809,6 +2031,33 @@ function generateHtmlFromMarkdown(markdown, title, isIndex, isServer, forceTheme
         document.getElementById('themeSelector').addEventListener('change', function(e) {
             switchTheme(e.target.value);
         });
+
+        // Typography theme functionality
+        function switchTypography(typography) {
+            document.body.setAttribute('data-typography', typography);
+            localStorage.setItem('preferredTypography', typography);
+        }
+
+        function loadPreferredTypography() {
+            const saved = localStorage.getItem('preferredTypography') || 'default';
+            switchTypography(saved);
+            updateTypographySelector(saved);
+        }
+
+        function updateTypographySelector(typography) {
+            const selector = document.getElementById('typographySelector');
+            if (selector) {
+                selector.value = typography;
+            }
+        }
+
+        // Typography selector change event
+        document.getElementById('typographySelector').addEventListener('change', function(e) {
+            switchTypography(e.target.value);
+        });
+
+        // Load preferred typography on page load
+        loadPreferredTypography();
 
         // Zoom functionality
         let currentZoom = 100;
