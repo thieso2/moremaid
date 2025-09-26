@@ -516,6 +516,90 @@ function generateIndexHtmlWithSearch(folderPath, files, port, forceTheme = null)
             margin-top: 80px;
         }
 
+        /* Controls styling for index page */
+        .controls-trigger {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 100px;
+            z-index: 999;
+            cursor: default;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .controls-trigger:hover ~ .controls,
+        .controls:hover {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .controls select {
+            background: var(--heading-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s, opacity 0.3s;
+            appearance: none;
+            padding-right: 35px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+        }
+
+        .controls select:hover {
+            transform: translateY(-2px);
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--heading-color);
+            border-radius: 8px;
+            padding: 5px 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .zoom-control button {
+            background: none;
+            border: none;
+            color: var(--bg-color);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 8px;
+            line-height: 1;
+            transition: opacity 0.2s;
+        }
+
+        .zoom-control button:hover {
+            opacity: 0.8;
+        }
+
+        .zoom-value {
+            color: var(--bg-color);
+            font-size: 14px;
+            min-width: 45px;
+            text-align: center;
+        }
+
         .file-list-flat {
             display: flex;
             flex-direction: column;
