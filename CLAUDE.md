@@ -78,3 +78,5 @@ The `samples/` directory contains test markdown files with various features incl
 - check if all used dependencies are compatible with MIT license
 - do not publish unless i ask!
 - do not commit unless i ask!
+- latest screenshot can always be found via : ls -t /Users/thies/Desktop/CleanShot* | head -1
+

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm view:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git add:*)",
+      "Read(//Users/thies/Desktop/**)"
     ],
     "deny": [],
     "ask": []
