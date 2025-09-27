@@ -1,5 +1,11 @@
 # Changes
 
+## v1.5.1 (2025-09-27)
+
+### Bug Fixes
+- **Fixed directory browsing**: WebSocket now connects for all localhost servers, not just temp/archive servers
+- Files now display correctly when browsing local directories with `mm --server .`
+
 ## v1.5.0 (2025-09-27)
 
 ### UI/UX Improvements
