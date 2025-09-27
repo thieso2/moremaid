@@ -122,10 +122,11 @@ async function main() {
             // Directory mode - start server
             await startFolderServer(inputPath, false, selectedTheme);
         } else if (inputPath.match(config.archive.supportedExtensions)) {
-            // Archive mode - extract and serve
+            // Archive mode - serve directly from ZIP
             const result = await handleZipFile(inputPath);
             if (result) {
-                await startFolderServer(result.tempDir, true, selectedTheme);
+                // Pass the VirtualFS instance to the server
+                await startFolderServer(result.virtualFS, true, selectedTheme);
             }
         } else {
             // Single file mode
