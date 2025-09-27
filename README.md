@@ -2,6 +2,29 @@
 
 A powerful Markdown viewer with full Mermaid diagram support. View your markdown files with beautifully rendered diagrams, syntax-highlighted code blocks, and a clean reading experience.
 
+## 🔐 Secure Document Sharing with --pack
+
+Share sensitive documentation securely with Moremaid's encrypted archive feature:
+
+```bash
+# Pack your markdown files into an encrypted ZIP
+mm --pack docs/
+
+# Set a password when prompted
+# Share the encrypted .zip file
+
+# Recipients can browse without extraction
+mm packed.zip
+```
+
+**Key Benefits:**
+- 📦 **Pack & Encrypt** - Bundle markdown files into password-protected ZIP archives
+- 🌐 **Browse Without Extraction** - View encrypted content directly in browser, no temp files
+- 🔒 **In-Memory Decryption** - Files stay encrypted on disk, decrypted only when viewed
+- 🚀 **Zero Installation for Recipients** - Anyone with the password can view via `npx moremaid packed.zip`
+
+Perfect for sharing confidential documentation, technical specs, or sensitive notes while maintaining security.
+
 ## Features
 
 - 🎨 **Mermaid Diagram Rendering** - Full support for flowcharts, sequence diagrams, Gantt charts, and more
