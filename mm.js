@@ -30,6 +30,7 @@ const args = process.argv.slice(2);
 // Parse flags
 const darkMode = args.includes('--dark') || args.includes('-d');
 const packMode = args.includes('--pack') || args.includes('-p');
+const keepRunning = args.includes('--keep-running') || args.includes('-k');
 let selectedTheme = null;
 
 const themeIndex = args.findIndex(arg => arg === '--theme' || arg === '-t');
@@ -66,6 +67,7 @@ Options:
   -t, --theme <theme>   Set color theme
   -d, --dark           Use dark theme (legacy)
   -p, --pack           Pack files into .moremaid archive
+  -k, --keep-running   Keep server running after browser closes
   -h, --help           Show help
   -v, --version        Show version
 
@@ -120,13 +122,13 @@ async function main() {
             await packMarkdownFiles(inputPath, stats.isDirectory(), selectedTheme);
         } else if (stats.isDirectory()) {
             // Directory mode - start server
-            await startFolderServer(inputPath, false, selectedTheme);
+            await startFolderServer(inputPath, false, selectedTheme, keepRunning);
         } else if (inputPath.match(config.archive.supportedExtensions)) {
             // Archive mode - serve directly from ZIP
             const result = await handleZipFile(inputPath);
             if (result) {
                 // Pass the VirtualFS instance to the server
-                await startFolderServer(result.virtualFS, true, selectedTheme);
+                await startFolderServer(result.virtualFS, true, selectedTheme, false);
             }
         } else {
             // Single file mode

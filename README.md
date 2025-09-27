@@ -43,7 +43,7 @@ Perfect for sharing confidential documentation, technical specs, or sensitive no
 - 📱 **Responsive Design** - Clean, readable layout that works on any screen size
 - 🔗 **Bookmarkable URLs** - Direct links to specific files (server mode)
 - 🖼️ **Fullscreen Diagrams** - Click to open Mermaid diagrams in a new window
-- 🧹 **Auto-Cleanup** - Temporary files cleaned up automatically when viewing archives
+- 🧹 **Auto-Cleanup** - Server automatically closes when browser disconnects (use `--keep-running` to keep server running)
 - 🚀 **Zero Config** - Works out of the box with sensible defaults
 
 ## Installation
@@ -104,7 +104,7 @@ mm shared.zip                   # Also supports regular .zip files
 Archive features:
 - **Password Protection** - Optional AES-256 encryption for sensitive documents
 - **Self-Contained** - All markdown files packed into a single shareable file
-- **Auto-Cleanup** - Server automatically shuts down when browser closes
+- **Auto-Cleanup** - Server automatically shuts down when browser closes (default behavior)
 - **Instant Navigation** - Single WebSocket connection for all files
 
 Available command-line options:
@@ -120,6 +120,7 @@ Options:
                       nord, solarized-light, solarized-dark,
                       monokai, one-dark
   -p, --pack          Pack files into .moremaid archive
+  -k, --keep-running  Keep server running after browser closes
 ```
 
 The tool:
@@ -136,6 +137,7 @@ Browse all markdown files in a directory with a built-in server:
 mm .                    # Current directory
 mm docs                 # Specific folder
 mm ~/projects/docs      # Any folder path
+mm . --keep-running     # Keep server running after browser closes
 PORT=3000 mm samples    # Custom port
 ```
 
@@ -146,6 +148,7 @@ Folder mode features:
 - **Full-text search** across all markdown files
 - **Context snippets** showing text around matches
 - **Keyboard shortcuts** for efficient navigation
+- **Auto-cleanup** - Server closes when browser disconnects (unless --keep-running is used)
 - Click files to view them with full rendering
 - Back navigation on file pages
 - Graceful shutdown with Ctrl+C

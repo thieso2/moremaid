@@ -13,7 +13,9 @@
       "Bash(git push:*)",
       "Bash(gh run rerun:*)",
       "Bash(git tag:*)",
-      "Bash(gh release delete:*)"
+      "Bash(gh release delete:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []

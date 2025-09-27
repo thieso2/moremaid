@@ -1,5 +1,22 @@
 # Changes
 
+## v1.5.2 (2025-09-27)
+
+### Bug Fixes
+- **Critical: Fixed .moremaid archive viewing**: Added missing `/api/file` endpoint that was broken in v1.5.0
+- Archive files (.moremaid and .zip) now correctly serve markdown content via the overlay viewer
+- Fixed password-protected archive support
+
+### New Features
+- **Auto-cleanup by default**: Server now automatically closes when browser disconnects (for both directory and archive modes)
+- **--keep-running flag**: New flag to disable auto-cleanup and keep server running indefinitely
+- **Graceful reconnection**: 500ms grace period allows page reloads without server shutdown
+
+### Improvements
+- Better error messages for encrypted files in archives
+- Consistent server behavior across all modes (directory, archive, encrypted)
+- Updated documentation to reflect new auto-cleanup behavior
+
 ## v1.5.1 (2025-09-27)
 
 ### Bug Fixes
