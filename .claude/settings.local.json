@@ -4,7 +4,16 @@
       "Bash(npm view:*)",
       "WebSearch",
       "Bash(git add:*)",
-      "Read(//Users/thies/Desktop/**)"
+      "Read(//Users/thies/Desktop/**)",
+      "Bash(gh workflow view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh run view:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(git tag:*)",
+      "Bash(gh release delete:*)"
     ],
     "deny": [],
     "ask": []

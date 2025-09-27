@@ -2,6 +2,10 @@
 
 A powerful Markdown viewer with full Mermaid diagram support. View your markdown files with beautifully rendered diagrams, syntax-highlighted code blocks, and a clean reading experience.
 
+## 🤖 About This Project
+
+**This entire project was coded by Claude (Anthropic's AI assistant), not by a human developer.** Every line of code, feature implementation, and architectural decision was created through AI-human collaboration. The human provided requirements and feedback, while Claude handled all the actual programming, debugging, and problem-solving.
+
 ## 🔐 Secure Document Sharing with --pack
 
 Share sensitive documentation securely with Moremaid's encrypted archive feature:
