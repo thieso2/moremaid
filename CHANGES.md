@@ -3,8 +3,9 @@
 ## v1.5.1 (2025-09-27)
 
 ### Bug Fixes
-- **Fixed directory browsing**: WebSocket now connects for all localhost servers, not just temp/archive servers
+- **Critical: Fixed directory browsing**: WebSocket now connects for all localhost servers, not just temp/archive servers
 - Files now display correctly when browsing local directories with `mm --server .`
+- Resolved issue where file list would not appear in browser when using server mode
 
 ## v1.5.0 (2025-09-27)
 
