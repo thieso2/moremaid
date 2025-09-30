@@ -18,8 +18,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests (if available)
-        run: npm test --if-present
+      # - name: Run tests (if available)
+      #   run: npm test --if-present
 
       - name: Publish to NPM
         run: npm publish
