@@ -167,6 +167,8 @@ Keyboard shortcuts:
 - `↑↓` - Navigate search results
 - `Enter` - Open selected file
 - `ESC` - Clear search and unfocus
+- `Ctrl/Cmd + Click` or `Middle Click` - Open file in new tab/window
+- `Shift + Click` - Open file in new tab/window
 
 ## Color Themes
 
