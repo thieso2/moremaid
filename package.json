@@ -8,7 +8,10 @@
     "moremaid": "mm.js"
   },
   "scripts": {
-    "test": "echo \"No tests configured yet\""
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed"
   },
   "keywords": [
     "markdown",
@@ -53,6 +56,9 @@
     "minisearch": "^7.2.0",
     "unzipper": "^0.12.3",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
   },
   "engines": {
     "node": ">=14.0.0"
