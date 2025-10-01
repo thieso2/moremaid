@@ -22,6 +22,7 @@ const {
 const { packMarkdownFiles, handleZipFile } = require('./lib/archive-handler');
 const { generateHtmlFromMarkdown } = require('./lib/html-generator');
 const { startFolderServer } = require('./lib/server');
+const { SingleFileFS } = require('./lib/virtual-fs');
 const packageJson = require('./package.json');
 
 // Parse command line arguments
@@ -31,6 +32,7 @@ const args = process.argv.slice(2);
 const darkMode = args.includes('--dark') || args.includes('-d');
 const packMode = args.includes('--pack') || args.includes('-p');
 const keepRunning = args.includes('--keep-running') || args.includes('-k');
+const oneShot = args.includes('--oneshot') || args.includes('-o');
 let selectedTheme = null;
 
 const themeIndex = args.findIndex(arg => arg === '--theme' || arg === '-t');
@@ -68,6 +70,7 @@ Options:
   -d, --dark           Use dark theme (legacy)
   -p, --pack           Pack files into .moremaid archive
   -k, --keep-running   Keep server running after browser closes
+  -o, --oneshot        Generate temp HTML and exit (legacy single-file mode)
   -h, --help           Show help
   -v, --version        Show version
 
@@ -132,7 +135,14 @@ async function main() {
             }
         } else {
             // Single file mode
-            handleSingleFile(inputPath);
+            if (oneShot) {
+                // Legacy mode: generate temp HTML and exit
+                handleSingleFile(inputPath);
+            } else {
+                // New default: start server for single file
+                const singleFileFS = new SingleFileFS(inputPath);
+                await startFolderServer(singleFileFS, false, selectedTheme, keepRunning);
+            }
         }
     } catch (error) {
         console.error('❌ Error:', error.message);

@@ -35,7 +35,7 @@ Perfect for sharing confidential documentation, technical specs, or sensitive no
 - 🖥️ **Syntax Highlighting** - Code blocks with syntax highlighting for 20+ languages via Prism.js
 - 🎭 **10 Color Themes** - Choose from Light, Dark, GitHub, Dracula, Nord, Solarized, Monokai, and more
 - 🌙 **Smart Theme UI** - Theme selector appears on hover in top-right corner
-- 📁 **Folder Mode** - Browse entire directories of markdown files with built-in HTTP server
+- 📁 **Server Mode** - Browse directories or view single files with built-in HTTP server
 - 📦 **Archive Support** - Pack and share markdown projects as `.moremaid` files with optional encryption
 - 🔍 **Full-Text Search** - Search within file contents with context snippets and highlighting
 - ⌨️ **Keyboard Navigation** - Use TAB to toggle search modes, arrow keys to navigate results
@@ -73,10 +73,10 @@ npx moremaid your-file.md
 
 ### Command-Line Tool (Single File)
 
-Convert any markdown file to HTML and open it in your browser:
+View any markdown file in your browser with a live server:
 
 ```bash
-mm README.md
+mm README.md                   # Starts server for single file
 mm docs/api-documentation.md
 mm ~/notes/meeting-notes.md
 
@@ -84,6 +84,10 @@ mm ~/notes/meeting-notes.md
 mm README.md --theme github
 mm file.md -t dracula
 mm file.md --dark              # Shortcut for --theme dark
+
+# Legacy mode: generate temp HTML and exit
+mm README.md --oneshot
+mm file.md -o
 ```
 
 ### Archive Mode (.moremaid Files)
@@ -121,13 +125,15 @@ Options:
                       monokai, one-dark
   -p, --pack          Pack files into .moremaid archive
   -k, --keep-running  Keep server running after browser closes
+  -o, --oneshot       Generate temp HTML and exit (legacy single-file mode)
 ```
 
-The tool:
-- Generates a standalone HTML file with all assets embedded
-- Opens it in your default browser automatically
-- Cleans up the temporary file after viewing
+Single file mode features:
+- Starts local server for live viewing
+- Auto-cleanup when browser closes (use `--keep-running` to disable)
+- Direct file view with no index page
 - Supports theme selection via command-line flags
+- Legacy temp file mode available with `--oneshot`
 
 ### Folder Mode (Directory Browser)
 
@@ -272,13 +278,12 @@ moremaid/
 ## How It Works
 
 ### CLI Tool (Single File)
-1. Reads the markdown file
-2. Converts to HTML using `marked` library
-3. Processes Mermaid code blocks
-4. Embeds all CSS and JavaScript inline
-5. Creates a temporary HTML file
-6. Opens it in your default browser
-7. Cleans up after 5 seconds
+1. Creates a single-file virtual file system
+2. Starts a local HTTP server
+3. Automatically redirects to the file view
+4. Renders markdown with Mermaid diagrams
+5. Auto-cleanup when browser disconnects (default)
+6. Use `--oneshot` for legacy temp file mode
 
 ### CLI Tool (Folder Mode)
 1. Scans directory recursively for markdown files
