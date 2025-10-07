@@ -1,5 +1,16 @@
 # Changes
 
+## v1.8.0 (2025-10-07)
+
+### New Features
+- **Update Notifier**: Automatically checks for new versions once per day and notifies users when updates are available
+
+### Bug Fixes
+- **Search Mode Toggle**: Fixed match count text appearing in file list when switching from content search to filename search mode
+
+### Improvements
+- Added cache control headers to index page response to prevent stale content on reload
+
 ## v1.5.2 (2025-09-27)
 
 ### Bug Fixes
