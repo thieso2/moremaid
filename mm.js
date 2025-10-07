@@ -113,9 +113,32 @@ if (!fs.existsSync(inputPath)) {
     process.exit(1);
 }
 
+// Check for updates using dynamic import
+async function checkForUpdates() {
+    try {
+        const updateNotifier = await import('update-notifier');
+        const notifier = updateNotifier.default({
+            pkg: packageJson,
+            updateCheckInterval: 1000 * 60 * 60 * 24 // Check once per day
+        });
+
+        if (notifier.update) {
+            notifier.notify({
+                isGlobal: true,
+                defer: false
+            });
+        }
+    } catch (error) {
+        // Silently fail if update-notifier is not available
+    }
+}
+
 // Main execution
 async function main() {
     try {
+        // Check for updates (async, non-blocking)
+        checkForUpdates().catch(() => {}); // Ignore errors silently
+
         console.log(`📊 Moremaid v${packageJson.version}`);
 
         const stats = fs.statSync(inputPath);
