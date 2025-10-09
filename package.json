@@ -1,6 +1,6 @@
 {
   "name": "moremaid",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "description": "Powerful Markdown viewer with Mermaid diagrams, archive support, and 10+ themes. Pack and share markdown projects as .moremaid files with encryption. Features full-text search, syntax highlighting, and auto-cleanup.",
   "main": "mm.js",
   "bin": {
