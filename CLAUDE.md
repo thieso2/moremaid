@@ -119,25 +119,42 @@ Moremaid is a modular Node.js application with the following structure:
 
 Tests are in `tests/` directory using Playwright. Key test files:
 - `test-dir-mode.spec.js` - Directory mode navigation and search
+- `directory-mode.spec.js` - Additional directory mode tests
 - `single-file-auto-cleanup.spec.js` - Auto-cleanup behavior
 - `child-window-auto-close.spec.js` - Child window lifecycle
-- `copy-button.spec.js` - Code block copy functionality
+- `copy-button.spec.js` - Code block copy functionality in single file mode
+- `file-overlay-copy.spec.js` - Copy button in file overlay
+- `single-file-copy-button.spec.js` - Single file copy functionality
 - `search-highlighting.spec.js` - Search result highlighting
+- `search-with-filter.spec.js` - Search with file filtering
+- `filter-functionality.spec.js` - File filter UI
+- `syntax-highlighting-overlay.spec.js` - Syntax highlighting in overlay
+- `auto-switch-all-files.spec.js` - Auto-switch between modes
 
-**Important**: Only Chromium tests run by default (per CLAUDE.md instructions). Firefox and WebKit are configured but typically skipped.
+**Test Execution**: By default, tests run headless on Chromium only. While `playwright.config.js` configures all three browsers (Chromium, Firefox, WebKit), only Chromium tests should be run during development. Use `npm test` for headless Chromium tests.
+
+## Utilities
+
+**`check_md.js`** - Markdown and Mermaid validation tool
+- Validates markdown syntax using marked parser
+- Checks Mermaid diagram syntax for common errors
+- Supports single file or directory scanning
+- Reports bracket/brace mismatches and invalid diagram types
+- Usage: `node check_md.js <file.md>` or `node check_md.js <directory>`
 
 ## Sample Files
 
 The `samples/` directory contains test markdown files for various features:
-- Mermaid diagrams (flowcharts, sequence, Gantt, etc.)
-- Syntax highlighting examples
-- Complex markdown structures
-- check if all used dependencies are compatible with MIT license
-- do not publish unless i ask!
-- do not commit unless i ask!
-- latest screenshot can always be found via : ls -t /Users/thies/Desktop/CleanShot* | head -1
-- always release by GH action
-- create and run playwright tests for every UI interaction.
-- only run Chromium test in playwright by default.
-- there is onle the js implementation, no python server
-- be default start Playwright tests headless.
+- `syntax-test.md` - Syntax highlighting examples
+- `test_syntax_highlighting.md` - Extended syntax tests
+- `toml-test.md`, `protobuf-test.md` - Specific language syntax tests
+- `anchors-test.md` - Markdown anchor functionality
+
+## Development Constraints
+
+- **Do not publish** to npm unless explicitly requested
+- **Do not commit** changes unless explicitly requested
+- **License compliance**: All dependencies must be MIT-compatible
+- **Releases**: Only via GitHub Actions by pushing tags (e.g., `git tag v1.x.x && git push origin v1.x.x`)
+- **Testing**: Create and run Playwright tests for every UI interaction
+- **Screenshots**: Latest screenshot available at: `ls -t /Users/thies/Desktop/CleanShot* | head -1`
