@@ -158,13 +158,29 @@ async function main() {
             }
         } else {
             // Single file mode
+            const isMarkdown = inputPath.match(config.markdown.extensions);
+
             if (oneShot) {
                 // Legacy mode: generate temp HTML and exit
-                handleSingleFile(inputPath);
+                if (isMarkdown) {
+                    handleSingleFile(inputPath);
+                } else {
+                    console.error('Error: --oneshot mode only supports markdown files');
+                    process.exit(1);
+                }
             } else {
                 // New default: start server for single file
-                const singleFileFS = new SingleFileFS(inputPath);
-                await startFolderServer(singleFileFS, false, selectedTheme, keepRunning);
+                if (isMarkdown) {
+                    const singleFileFS = new SingleFileFS(inputPath);
+                    await startFolderServer(singleFileFS, false, selectedTheme, keepRunning);
+                } else {
+                    // For non-markdown files, serve via folder mode with parent directory
+                    const parentDir = path.dirname(inputPath);
+                    const fileName = path.basename(inputPath);
+                    console.log(`📄 Opening ${fileName} in browser...`);
+                    // Use folder server but redirect to this specific file
+                    await startFolderServer(parentDir, false, selectedTheme, keepRunning, fileName);
+                }
             }
         }
     } catch (error) {
