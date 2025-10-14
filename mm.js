@@ -23,6 +23,7 @@ const { packMarkdownFiles, handleZipFile } = require('./lib/archive-handler');
 const { generateHtmlFromMarkdown } = require('./lib/html-generator');
 const { startFolderServer } = require('./lib/server');
 const { SingleFileFS } = require('./lib/virtual-fs');
+const { validateMarkdown } = require('./lib/validator');
 const packageJson = require('./package.json');
 
 // Parse command line arguments
@@ -33,6 +34,7 @@ const darkMode = args.includes('--dark') || args.includes('-d');
 const packMode = args.includes('--pack') || args.includes('-p');
 const keepRunning = args.includes('--keep-running') || args.includes('-k');
 const oneShot = args.includes('--oneshot') || args.includes('-o');
+const validateMode = args.includes('--validate');
 let selectedTheme = null;
 
 const themeIndex = args.findIndex(arg => arg === '--theme' || arg === '-t');
@@ -62,6 +64,7 @@ Usage:
   mm <directory>                   Start a server to browse markdown files
   mm <file.zip|file.moremaid>     Extract and serve archive
   mm --pack <file|directory>       Create .moremaid archive
+  mm --validate <file|directory>   Validate markdown and mermaid syntax
   mm --help                        Show this help message
   mm --version                    Show version number
 
@@ -69,6 +72,7 @@ Options:
   -t, --theme <theme>   Set color theme
   -d, --dark           Use dark theme (legacy)
   -p, --pack           Pack files into .moremaid archive
+  --validate           Validate markdown and mermaid syntax
   -k, --keep-running   Keep server running after browser closes
   -o, --oneshot        Generate temp HTML and exit (legacy single-file mode)
   -h, --help           Show help
@@ -86,6 +90,8 @@ Examples:
   mm --theme github README.md
   mm --pack myproject/
   mm archive.moremaid
+  mm --validate README.md
+  mm --validate docs/
 `);
     process.exit(0);
 }
@@ -133,11 +139,77 @@ async function checkForUpdates() {
     }
 }
 
+// ANSI color codes for output
+const colors = {
+    reset: '\x1b[0m',
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    gray: '\x1b[90m'
+};
+
+/**
+ * Handle validation mode
+ */
+function handleValidation(inputPath) {
+    console.log(`${colors.blue}Validating markdown files...${colors.reset}\n`);
+
+    try {
+        const results = validateMarkdown(inputPath);
+
+        if (results.totalStats.filesChecked === 0) {
+            console.log(`${colors.yellow}No markdown files found${colors.reset}`);
+            process.exit(0);
+        }
+
+        // Print results only for files with errors
+        for (const fileResult of results.files) {
+            if (fileResult.errors.length > 0) {
+                const relativePath = path.relative(process.cwd(), fileResult.path);
+                console.log(`${colors.red}✗${colors.reset} ${relativePath}`);
+
+                for (const error of fileResult.errors) {
+                    const lineInfo = error.line ? `:${error.line}` : '';
+                    const typeColor = error.type === 'mermaid' ? colors.yellow : colors.red;
+                    console.log(`  ${typeColor}[${error.type}]${colors.reset}${lineInfo} ${error.message}`);
+                }
+                console.log(''); // Add blank line between files
+            }
+        }
+
+        // Print summary
+        console.log('');
+        console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+        console.log(`Files checked:        ${results.totalStats.filesChecked}`);
+        console.log(`Files with errors:    ${results.totalStats.filesWithErrors > 0 ? colors.red : colors.green}${results.totalStats.filesWithErrors}${colors.reset}`);
+        console.log(`Markdown errors:      ${results.totalStats.markdownErrors > 0 ? colors.red : colors.green}${results.totalStats.markdownErrors}${colors.reset}`);
+        console.log(`Mermaid errors:       ${results.totalStats.mermaidErrors > 0 ? colors.yellow : colors.green}${results.totalStats.mermaidErrors}${colors.reset}`);
+        console.log(`Mermaid blocks found: ${results.totalStats.mermaidBlocksChecked}`);
+
+        // Exit with error code if there were errors
+        if (results.totalStats.filesWithErrors > 0) {
+            process.exit(1);
+        }
+
+        process.exit(0);
+    } catch (error) {
+        console.error(`${colors.red}Error:${colors.reset} ${error.message}`);
+        process.exit(1);
+    }
+}
+
 // Main execution
 async function main() {
     try {
         // Check for updates (async, non-blocking)
         checkForUpdates().catch(() => {}); // Ignore errors silently
+
+        // Handle validation mode early (before showing version)
+        if (validateMode) {
+            handleValidation(inputPath);
+            return; // handleValidation exits, but adding return for clarity
+        }
 
         console.log(`📊 Moremaid v${packageJson.version}`);
 
