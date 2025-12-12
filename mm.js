@@ -22,7 +22,7 @@ const {
 const { packMarkdownFiles, handleZipFile } = require('./lib/archive-handler');
 const { generateHtmlFromMarkdown } = require('./lib/html-generator');
 const { startFolderServer } = require('./lib/server');
-const { SingleFileFS } = require('./lib/virtual-fs');
+const { SingleFileFS, MultiSourceFS } = require('./lib/virtual-fs');
 const { validateMarkdown } = require('./lib/validator');
 const packageJson = require('./package.json');
 
@@ -60,13 +60,14 @@ moremaid v${packageJson.version}
 A command-line tool to view Markdown files with Mermaid diagram support
 
 Usage:
-  mm <file.md>                    View a single markdown file
-  mm <directory>                   Start a server to browse markdown files
-  mm <file.zip|file.moremaid>     Extract and serve archive
-  mm --pack <file|directory>       Create .moremaid archive
-  mm --validate <file|directory>   Validate markdown and mermaid syntax
-  mm --help                        Show this help message
-  mm --version                    Show version number
+  mm <file.md>                         View a single markdown file
+  mm <directory>                        Start a server to browse markdown files
+  mm <file1.md> <file2.md> <dir>...    Browse multiple files/directories
+  mm <file.zip|file.moremaid>          Extract and serve archive
+  mm --pack <file|directory>            Create .moremaid archive
+  mm --validate <file|directory>        Validate markdown and mermaid syntax
+  mm --help                             Show this help message
+  mm --version                          Show version number
 
 Options:
   -t, --theme <theme>   Set color theme
@@ -87,6 +88,7 @@ Typography:
 Examples:
   mm README.md
   mm docs/
+  mm README.md CHANGES.md docs/
   mm --theme github README.md
   mm --pack myproject/
   mm archive.moremaid
@@ -111,12 +113,14 @@ if (inputArgs.length === 0 && !args.includes('--help') && !args.includes('-h') &
     process.exit(1);
 }
 
-const inputPath = inputArgs[0];
+const inputPaths = inputArgs;
 
-// Check if input exists
-if (!fs.existsSync(inputPath)) {
-    console.error(`Error: File or directory not found: ${inputPath}`);
-    process.exit(1);
+// Check if all inputs exist
+for (const inputPath of inputPaths) {
+    if (!fs.existsSync(inputPath)) {
+        console.error(`Error: File or directory not found: ${inputPath}`);
+        process.exit(1);
+    }
 }
 
 // Check for updates using dynamic import
@@ -152,11 +156,33 @@ const colors = {
 /**
  * Handle validation mode
  */
-function handleValidation(inputPath) {
+function handleValidation(inputPaths) {
     console.log(`${colors.blue}Validating markdown files...${colors.reset}\n`);
 
     try {
-        const results = validateMarkdown(inputPath);
+        // If multiple paths, validate each one
+        let allResults = {
+            files: [],
+            totalStats: {
+                filesChecked: 0,
+                filesWithErrors: 0,
+                markdownErrors: 0,
+                mermaidErrors: 0,
+                mermaidBlocksChecked: 0
+            }
+        };
+
+        for (const inputPath of inputPaths) {
+            const results = validateMarkdown(inputPath);
+            allResults.files = allResults.files.concat(results.files);
+            allResults.totalStats.filesChecked += results.totalStats.filesChecked;
+            allResults.totalStats.filesWithErrors += results.totalStats.filesWithErrors;
+            allResults.totalStats.markdownErrors += results.totalStats.markdownErrors;
+            allResults.totalStats.mermaidErrors += results.totalStats.mermaidErrors;
+            allResults.totalStats.mermaidBlocksChecked += results.totalStats.mermaidBlocksChecked;
+        }
+
+        const results = allResults;
 
         if (results.totalStats.filesChecked === 0) {
             console.log(`${colors.yellow}No markdown files found${colors.reset}`);
@@ -207,51 +233,67 @@ async function main() {
 
         // Handle validation mode early (before showing version)
         if (validateMode) {
-            handleValidation(inputPath);
+            handleValidation(inputPaths);
             return; // handleValidation exits, but adding return for clarity
         }
 
         console.log(`📊 Moremaid v${packageJson.version}`);
 
-        const stats = fs.statSync(inputPath);
+        // Handle multiple inputs
+        if (inputPaths.length > 1) {
+            // Multiple sources mode - create virtual filesystem
+            const multiFS = new MultiSourceFS(inputPaths);
 
-        if (packMode) {
-            // Pack mode - create archive
-            await packMarkdownFiles(inputPath, stats.isDirectory(), selectedTheme);
-        } else if (stats.isDirectory()) {
-            // Directory mode - start server
-            await startFolderServer(inputPath, false, selectedTheme, keepRunning);
-        } else if (inputPath.match(config.archive.supportedExtensions)) {
-            // Archive mode - serve directly from ZIP
-            const result = await handleZipFile(inputPath);
-            if (result) {
-                // Pass the VirtualFS instance to the server
-                await startFolderServer(result.virtualFS, true, selectedTheme, false);
+            if (multiFS.getFileCount() === 0) {
+                console.error('Error: No markdown files found in the specified paths');
+                process.exit(1);
             }
-        } else {
-            // Single file mode
-            const isMarkdown = inputPath.match(config.markdown.extensions);
 
-            if (oneShot) {
-                // Legacy mode: generate temp HTML and exit
-                if (isMarkdown) {
-                    handleSingleFile(inputPath);
-                } else {
-                    console.error('Error: --oneshot mode only supports markdown files');
-                    process.exit(1);
+            console.log(`📚 Browsing ${multiFS.getFileCount()} file(s) from ${multiFS.getSourceCount()} source(s)...`);
+            await startFolderServer(multiFS, true, selectedTheme, keepRunning);
+        } else {
+            // Single input - existing logic
+            const inputPath = inputPaths[0];
+            const stats = fs.statSync(inputPath);
+
+            if (packMode) {
+                // Pack mode - create archive
+                await packMarkdownFiles(inputPath, stats.isDirectory(), selectedTheme);
+            } else if (stats.isDirectory()) {
+                // Directory mode - start server
+                await startFolderServer(inputPath, false, selectedTheme, keepRunning);
+            } else if (inputPath.match(config.archive.supportedExtensions)) {
+                // Archive mode - serve directly from ZIP
+                const result = await handleZipFile(inputPath);
+                if (result) {
+                    // Pass the VirtualFS instance to the server
+                    await startFolderServer(result.virtualFS, true, selectedTheme, false);
                 }
             } else {
-                // New default: start server for single file
-                if (isMarkdown) {
-                    const singleFileFS = new SingleFileFS(inputPath);
-                    await startFolderServer(singleFileFS, false, selectedTheme, keepRunning);
+                // Single file mode
+                const isMarkdown = inputPath.match(config.markdown.extensions);
+
+                if (oneShot) {
+                    // Legacy mode: generate temp HTML and exit
+                    if (isMarkdown) {
+                        handleSingleFile(inputPath);
+                    } else {
+                        console.error('Error: --oneshot mode only supports markdown files');
+                        process.exit(1);
+                    }
                 } else {
-                    // For non-markdown files, serve via folder mode with parent directory
-                    const parentDir = path.dirname(inputPath);
-                    const fileName = path.basename(inputPath);
-                    console.log(`📄 Opening ${fileName} in browser...`);
-                    // Use folder server but redirect to this specific file
-                    await startFolderServer(parentDir, false, selectedTheme, keepRunning, fileName);
+                    // New default: start server for single file
+                    if (isMarkdown) {
+                        const singleFileFS = new SingleFileFS(inputPath);
+                        await startFolderServer(singleFileFS, false, selectedTheme, keepRunning);
+                    } else {
+                        // For non-markdown files, serve via folder mode with parent directory
+                        const parentDir = path.dirname(inputPath);
+                        const fileName = path.basename(inputPath);
+                        console.log(`📄 Opening ${fileName} in browser...`);
+                        // Use folder server but redirect to this specific file
+                        await startFolderServer(parentDir, false, selectedTheme, keepRunning, fileName);
+                    }
                 }
             }
         }
